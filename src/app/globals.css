@@ -1,26 +1,131 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Project Zenith — design system
+ * Cinematic aerospace command-center. Dark space theme, high contrast,
+ * restrained glass surfaces, mono for telemetry.
+ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Core surfaces */
+  --color-space-void: #04060d;
+  --color-space-deep: #070b16;
+  --color-space-panel: #0b1224;
+  --color-space-panel-2: #0e1730;
+  --color-space-edge: #1b2a4a;
+  --color-space-line: #233458;
+
+  /* Text */
+  --color-ink: #eaf2ff;
+  --color-ink-dim: #9fb2d4;
+  --color-ink-faint: #5d7099;
+
+  /* Mission accents */
+  --color-zenith: #38e1ff; /* primary cyan */
+  --color-zenith-soft: #7ff0ff;
+  --color-plasma: #7c5cff; /* violet */
+  --color-aurora: #34f5c5; /* green */
+  --color-solar: #ffb454; /* amber */
+  --color-flare: #ff5d6c; /* red/alert */
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-panel: 14px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
+  --background: var(--color-space-void);
+  --foreground: var(--color-ink);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1200px 700px at 78% -8%, rgba(60, 120, 255, 0.12), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(124, 92, 255, 0.1), transparent 55%),
+    var(--color-space-void);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle starfield overlay (pure CSS, no asset, demo-safe) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 75% 15%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 50% 60%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 85% 70%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 35% 85%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 10% 75%, rgba(255, 255, 255, 0.35), transparent);
+  background-repeat: repeat;
+  background-size: 320px 320px;
+  opacity: 0.5;
+}
+
+/* Reusable surface utilities */
+@layer components {
+  .panel {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-space-panel) 92%, transparent),
+      color-mix(in oklab, var(--color-space-deep) 92%, transparent)
+    );
+    border: 1px solid var(--color-space-edge);
+    border-radius: var(--radius-panel);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+      0 18px 40px -28px rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+  }
+  .panel-heading {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    font-weight: 600;
+  }
+  .mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .hairline {
+    border-color: var(--color-space-line);
+  }
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-space-line) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-space-line);
+  border-radius: 99px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
