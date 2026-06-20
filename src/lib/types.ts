@@ -70,16 +70,22 @@ export type SkyBody = {
   aboveHorizon: boolean;
 };
 
-/** A predicted visible pass of a satellite over the observer. */
+/** A predicted pass of a satellite over the observer. */
 export type SatPass = {
   noradId: number;
   startUtc: number;
+  peakUtc: number;
   endUtc: number;
   maxElevationDeg: number;
   startAzimuthDeg: number;
   endAzimuthDeg: number;
   durationSec: number;
   visibilityQuality: "excellent" | "good" | "fair" | "poor";
+  /** Observer is in darkness (sun below civil twilight) at peak. */
+  visible: boolean;
+  sunAltAtPeakDeg: number;
+  /** Elevation samples across the pass (for the elevation chart). */
+  samples: { t: number; elevationDeg: number }[];
 };
 
 /** Observing-conditions inputs + computed score. */

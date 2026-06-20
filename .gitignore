@@ -37,6 +37,12 @@ yarn-error.log*
 # cesium assets are copied from node_modules by postinstall (scripts/copy-cesium.mjs)
 /public/cesium
 
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # vercel
 .vercel
 

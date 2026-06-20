@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Panel,
   Stat,
@@ -11,9 +11,14 @@ import { GlobeView } from "@/components/globe/GlobeView";
 import { NavControls } from "@/components/globe/NavControls";
 import { GlobeReadout } from "@/components/globe/GlobeReadout";
 import { SearchBar } from "@/components/panels/SearchBar";
+import { PassPredictor } from "@/components/panels/PassPredictor";
+import { ObservationScorePanel } from "@/components/panels/ObservationScorePanel";
+import { SourceInspector } from "@/components/panels/SourceInspector";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
+import { useUrlSync } from "@/hooks/useUrlSync";
 import { overheadRank, classifyElevation } from "@/lib/astro/observer";
+import { buildObserveQuery } from "@/lib/url-state";
 import { cn } from "@/lib/cn";
 import type { SatState } from "@/lib/types";
 
@@ -45,6 +50,7 @@ const PRESETS: ZenithLocationPreset[] = [
 
 export function Dashboard() {
   useSatelliteEngine();
+  useUrlSync();
   const satStates = useStore((s) => s.satStates);
   const presentationMode = useStore((s) => s.presentationMode);
   const leftPanelOpen = useStore((s) => s.leftPanelOpen);
@@ -101,6 +107,8 @@ export function Dashboard() {
                 <PlacesPanel />
                 <LayersPanel satStates={satStates} />
                 <OverheadPanel overhead={overhead} />
+                <ObservationScorePanel />
+                <SourceInspector />
               </div>
             )}
           </div>
@@ -111,6 +119,7 @@ export function Dashboard() {
               <StatusDot status="ok" />
               Live · {satStates.length.toLocaleString()} tracked
             </span>
+            <ShareButton />
             <DemoButton />
           </div>
 
@@ -123,8 +132,11 @@ export function Dashboard() {
                 "max-lg:bottom-16 max-lg:left-2 max-lg:right-2",
               )}
             >
-              <TelemetryPanel />
-              <SkyPositionPanel />
+              <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-2 overflow-y-auto pr-0.5">
+                <TelemetryPanel />
+                <SkyPositionPanel />
+                <PassPredictor />
+              </div>
             </aside>
           )}
 
@@ -168,6 +180,29 @@ function Brand() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+  const onShare = () => {
+    const { location, selectedNoradId } = useStore.getState();
+    const url = `${window.location.origin}/observe?${buildObserveQuery(location, selectedNoradId)}`;
+    navigator.clipboard?.writeText(url).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      },
+      () => {},
+    );
+  };
+  return (
+    <button
+      onClick={onShare}
+      className="rounded-full border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 px-3 py-1.5 text-xs text-[color:var(--color-ink-dim)] backdrop-blur transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
+    >
+      {copied ? "Copied ✓" : "Share"}
+    </button>
   );
 }
 
