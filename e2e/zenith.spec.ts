@@ -75,6 +75,19 @@ test.describe("Project Zenith", () => {
     });
   });
 
+  test("panel tabs reveal the sky map and space weather", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Weather", exact: true }).click();
+    await expect(page.getByText("Space Weather").first()).toBeVisible({
+      timeout: 30_000,
+    });
+    await page.getByRole("button", { name: "Sky", exact: true }).click();
+    await expect(page.getByText("Sky Map").first()).toBeVisible();
+  });
+
   test("mobile layout shows the bottom tab bar", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile-only layout check");
     await page.goto("/");
