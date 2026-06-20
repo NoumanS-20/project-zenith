@@ -52,7 +52,7 @@ export function predictPasses(
     startAz: number;
     peak: number;
     maxEl: number;
-    samples: { t: number; elevationDeg: number }[];
+    samples: { t: number; elevationDeg: number; azimuthDeg: number }[];
   } | null = null;
 
   for (let t = fromEpochMs; t <= endMs; t += stepMs) {
@@ -67,10 +67,10 @@ export function predictPasses(
         startAz: la.azimuthDeg,
         peak: t,
         maxEl: el,
-        samples: [{ t, elevationDeg: el }],
+        samples: [{ t, elevationDeg: el, azimuthDeg: la.azimuthDeg }],
       };
     } else if (inPass && cur) {
-      cur.samples.push({ t, elevationDeg: el });
+      cur.samples.push({ t, elevationDeg: el, azimuthDeg: la.azimuthDeg });
       if (el > cur.maxEl) {
         cur.maxEl = el;
         cur.peak = t;

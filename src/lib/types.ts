@@ -84,8 +84,8 @@ export type SatPass = {
   /** Observer is in darkness (sun below civil twilight) at peak. */
   visible: boolean;
   sunAltAtPeakDeg: number;
-  /** Elevation samples across the pass (for the elevation chart). */
-  samples: { t: number; elevationDeg: number }[];
+  /** Samples across the pass (elevation chart + sky-map arc). */
+  samples: { t: number; elevationDeg: number; azimuthDeg: number }[];
 };
 
 /** Observing-conditions inputs + computed score. */

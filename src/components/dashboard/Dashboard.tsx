@@ -14,6 +14,11 @@ import { SearchBar } from "@/components/panels/SearchBar";
 import { PassPredictor } from "@/components/panels/PassPredictor";
 import { ObservationScorePanel } from "@/components/panels/ObservationScorePanel";
 import { SourceInspector } from "@/components/panels/SourceInspector";
+import { SkyMap } from "@/components/panels/SkyMap";
+import { SpaceWeatherPanel } from "@/components/panels/SpaceWeatherPanel";
+import { ApodCard } from "@/components/panels/ApodCard";
+import { ObservingConditions } from "@/components/panels/ObservingConditions";
+import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
@@ -56,6 +61,8 @@ export function Dashboard() {
   const leftPanelOpen = useStore((s) => s.leftPanelOpen);
   const setLeftPanelOpen = useStore((s) => s.setLeftPanelOpen);
   const selectedId = useStore((s) => s.selectedNoradId);
+  const mobileTab = useStore((s) => s.mobileTab);
+  const reducedMotion = useStore((s) => s.reducedMotion);
 
   // Default the left panel closed on small screens so the globe leads.
   useEffect(() => {
@@ -76,7 +83,10 @@ export function Dashboard() {
   const hasSelection = selectedId !== null && satStates.some((s) => s.noradId === selectedId);
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden">
+    <div
+      className="relative h-dvh w-full overflow-hidden"
+      data-reduced-motion={reducedMotion ? "true" : undefined}
+    >
       {/* GLOBE (full-bleed) */}
       <GlobeView />
 
@@ -102,13 +112,31 @@ export function Dashboard() {
               <SearchBar />
             </div>
 
-            {leftPanelOpen && (
+            {leftPanelOpen && mobileTab !== "globe" && (
               <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
-                <PlacesPanel />
-                <LayersPanel satStates={satStates} />
-                <OverheadPanel overhead={overhead} />
-                <ObservationScorePanel />
-                <SourceInspector />
+                <PanelTabs />
+                {mobileTab === "overhead" && (
+                  <>
+                    <PlacesPanel />
+                    <LayersPanel satStates={satStates} />
+                    <OverheadPanel overhead={overhead} />
+                    <ObservationScorePanel />
+                  </>
+                )}
+                {mobileTab === "sky" && <SkyMap />}
+                {mobileTab === "weather" && (
+                  <>
+                    <SpaceWeatherPanel />
+                    <ObservingConditions />
+                    <ApodCard />
+                  </>
+                )}
+                {mobileTab === "settings" && (
+                  <>
+                    <SettingsPanel />
+                    <SourceInspector />
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -164,6 +192,36 @@ export function Dashboard() {
           Exit Presentation
         </button>
       )}
+    </div>
+  );
+}
+
+const PANEL_TABS = [
+  { id: "overhead", label: "Layers" },
+  { id: "sky", label: "Sky" },
+  { id: "weather", label: "Weather" },
+  { id: "settings", label: "Settings" },
+] as const;
+
+function PanelTabs() {
+  const mobileTab = useStore((s) => s.mobileTab);
+  const setMobileTab = useStore((s) => s.setMobileTab);
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 p-1 backdrop-blur">
+      {PANEL_TABS.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => setMobileTab(t.id)}
+          className={cn(
+            "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+            mobileTab === t.id
+              ? "bg-[color:var(--color-zenith)]/15 text-[color:var(--color-zenith)]"
+              : "text-[color:var(--color-ink-faint)] hover:text-[color:var(--color-ink)]",
+          )}
+        >
+          {t.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -469,27 +527,35 @@ function EmptyHint({ text }: { text: string }) {
 
 function MobileTabBar() {
   const mobileTab = useStore((s) => s.mobileTab);
+  const leftPanelOpen = useStore((s) => s.leftPanelOpen);
   const setMobileTab = useStore((s) => s.setMobileTab);
-  const toggleLeftPanel = useStore((s) => s.toggleLeftPanel);
+  const setLeftPanelOpen = useStore((s) => s.setLeftPanelOpen);
   return (
     <nav className="pointer-events-auto absolute inset-x-2 bottom-2 z-30 flex items-center justify-around rounded-[var(--radius-panel)] border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/90 py-1.5 backdrop-blur lg:hidden">
-      {(["globe", "overhead", "sky", "weather", "settings"] as const).map((t) => (
-        <button
-          key={t}
-          onClick={() => {
-            setMobileTab(t);
-            if (t !== "globe") toggleLeftPanel();
-          }}
-          className={cn(
-            "flex-1 rounded-md px-1 py-1.5 text-[0.66rem] font-medium uppercase tracking-wide transition-colors",
-            mobileTab === t
-              ? "text-[color:var(--color-zenith)]"
-              : "text-[color:var(--color-ink-faint)]",
-          )}
-        >
-          {t}
-        </button>
-      ))}
+      {(["globe", "overhead", "sky", "weather", "settings"] as const).map((t) => {
+        const active = t === "globe" ? !leftPanelOpen : leftPanelOpen && mobileTab === t;
+        return (
+          <button
+            key={t}
+            onClick={() => {
+              if (t === "globe") {
+                setLeftPanelOpen(false);
+              } else {
+                setMobileTab(t);
+                setLeftPanelOpen(true);
+              }
+            }}
+            className={cn(
+              "flex-1 rounded-md px-1 py-1.5 text-[0.66rem] font-medium uppercase tracking-wide transition-colors",
+              active
+                ? "text-[color:var(--color-zenith)]"
+                : "text-[color:var(--color-ink-faint)]",
+            )}
+          >
+            {t}
+          </button>
+        );
+      })}
     </nav>
   );
 }

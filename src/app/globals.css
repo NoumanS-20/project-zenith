@@ -150,3 +150,12 @@ body::before {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Manual reduced-motion toggle (Settings panel) */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

@@ -120,7 +120,7 @@ export const useStore = create<ZenithState>((set, get) => ({
   togglePresentation: () =>
     set((s) => ({ presentationMode: !s.presentationMode })),
 
-  mobileTab: "globe",
+  mobileTab: "overhead",
   setMobileTab: (mobileTab) => set({ mobileTab }),
 
   cameraHeadingDeg: 0,
