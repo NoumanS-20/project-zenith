@@ -1,7 +1,13 @@
 "use client";
 
 import { create } from "zustand";
-import type { GeoCoord, SatCategory } from "@/lib/types";
+import type {
+  GeoCoord,
+  SatCategory,
+  SatState,
+  TleRecord,
+  DataProvenance,
+} from "@/lib/types";
 
 /** Default observer: Chennai (SRM IST home turf, also a judge demo preset). */
 export const DEFAULT_LOCATION: GeoCoord = {
@@ -49,6 +55,15 @@ type ZenithState = {
   // Mobile active tab
   mobileTab: "globe" | "overhead" | "sky" | "weather" | "settings";
   setMobileTab: (t: ZenithState["mobileTab"]) => void;
+
+  // Live orbital engine output (updated ~1Hz by useSatelliteEngine)
+  tles: TleRecord[];
+  setTles: (tles: TleRecord[]) => void;
+  tleProvenance: Record<string, DataProvenance>;
+  setTleProvenance: (p: Record<string, DataProvenance>) => void;
+  satStates: SatState[];
+  satComputedAt: number;
+  setSatStates: (states: SatState[], computedAt: number) => void;
 };
 
 const ALL_CATEGORIES: SatCategory[] = [
@@ -95,6 +110,14 @@ export const useStore = create<ZenithState>((set, get) => ({
 
   mobileTab: "globe",
   setMobileTab: (mobileTab) => set({ mobileTab }),
+
+  tles: [],
+  setTles: (tles) => set({ tles }),
+  tleProvenance: {},
+  setTleProvenance: (tleProvenance) => set({ tleProvenance }),
+  satStates: [],
+  satComputedAt: 0,
+  setSatStates: (satStates, satComputedAt) => set({ satStates, satComputedAt }),
 }));
 
 export { ALL_CATEGORIES };
