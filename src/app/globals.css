@@ -120,6 +120,27 @@ body::before {
   border-radius: 99px;
 }
 
+/* Cesium chrome — blend the widget into the dark theme */
+.cesium-viewer,
+.cesium-widget,
+.cesium-widget canvas {
+  background: transparent !important;
+}
+.cesium-viewer-bottom {
+  right: 0;
+  left: auto;
+}
+.cesium-credits,
+.cesium-widget-credits {
+  font-size: 9px !important;
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.cesium-credit-logoContainer,
+.cesium-credit-expand-link {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

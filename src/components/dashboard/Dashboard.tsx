@@ -1,7 +1,7 @@
 "use client";
 
 import { Panel, Stat, ConfidenceBadge, StatusDot } from "@/components/ui/primitives";
-import { GlobeStage } from "./GlobeStage";
+import { GlobeView } from "@/components/globe/GlobeView";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { cn } from "@/lib/cn";
 
@@ -107,7 +107,7 @@ export function Dashboard() {
 
         {/* CENTER GLOBE */}
         <main className="relative min-h-0">
-          <GlobeStage />
+          <GlobeView />
         </main>
 
         {/* RIGHT RAIL */}
