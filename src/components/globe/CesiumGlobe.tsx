@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as Cesium from "cesium";
 import { useStore } from "@/store/useStore";
 import { toSatrec, propagateSubpoint } from "@/lib/astro/propagate";
+import { registerGlobeApi, clearGlobeApi } from "@/lib/globeControls";
 import type { SatState, SatCategory } from "@/lib/types";
 
 // Cesium loads its Workers/Assets/Widgets from here (staged by copy-cesium.mjs).
@@ -58,8 +59,15 @@ export function CesiumGlobe() {
     const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
     if (ionToken) Cesium.Ion.defaultAccessToken = ionToken;
 
+    // With an Ion token: real satellite imagery (Google-Earth-like).
+    // Without: keyless dark CARTO basemap that still suits the dark theme.
+    // Default world imagery style is aerial-with-labels — the Google-Earth look.
+    const baseLayer = ionToken
+      ? Cesium.ImageryLayer.fromWorldImagery({})
+      : darkImagery();
+
     const viewer = new Cesium.Viewer(containerRef.current, {
-      baseLayer: darkImagery(),
+      baseLayer,
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -121,7 +129,70 @@ export function CesiumGlobe() {
       duration: 0,
     });
 
+    // Keep the bottom-left readout (heading + eye altitude) in sync.
+    const cam = viewer.camera;
+    scene.camera.percentageChanged = 0.05;
+    const syncReadout = () => {
+      useStore
+        .getState()
+        .setCameraReadout(
+          Cesium.Math.toDegrees(cam.heading),
+          cam.positionCartographic.height / 1000,
+        );
+    };
+    scene.camera.changed.addEventListener(syncReadout);
+    syncReadout();
+
+    // Imperative API for the Google-Earth-style navigation controls.
+    let mode: "2d" | "3d" = "3d";
+    let topDown = false;
+    registerGlobeApi({
+      zoomIn: () => cam.zoomIn(Math.max(cam.positionCartographic.height * 0.35, 50_000)),
+      zoomOut: () =>
+        cam.zoomOut(Math.max(cam.positionCartographic.height * 0.6, 80_000)),
+      resetNorth: () =>
+        cam.flyTo({
+          destination: cam.position.clone(),
+          orientation: { heading: 0, pitch: cam.pitch, roll: 0 },
+          duration: 0.6,
+        }),
+      tiltToggle: () => {
+        topDown = !topDown;
+        cam.flyTo({
+          destination: cam.position.clone(),
+          orientation: {
+            heading: cam.heading,
+            pitch: topDown
+              ? Cesium.Math.toRadians(-90)
+              : Cesium.Math.toRadians(-45),
+            roll: 0,
+          },
+          duration: 0.6,
+        });
+      },
+      toggle2D3D: () => {
+        if (mode === "3d") {
+          scene.morphTo2D(1.0);
+          mode = "2d";
+        } else {
+          scene.morphTo3D(1.0);
+          mode = "3d";
+        }
+        useStore.getState().setSceneMode(mode);
+      },
+      flyHome: () => {
+        const l = useStore.getState().location;
+        cam.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(l.lon, l.lat, 9_000_000),
+          duration: 1.2,
+        });
+      },
+      mode: () => mode,
+    });
+
     return () => {
+      scene.camera.changed.removeEventListener(syncReadout);
+      clearGlobeApi();
       handler.destroy();
       viewer.destroy();
       viewerRef.current = null;

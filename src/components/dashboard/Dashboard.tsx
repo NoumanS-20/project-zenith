@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Panel,
   Stat,
@@ -8,6 +8,9 @@ import {
   StatusDot,
 } from "@/components/ui/primitives";
 import { GlobeView } from "@/components/globe/GlobeView";
+import { NavControls } from "@/components/globe/NavControls";
+import { GlobeReadout } from "@/components/globe/GlobeReadout";
+import { SearchBar } from "@/components/panels/SearchBar";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { overheadRank, classifyElevation } from "@/lib/astro/observer";
@@ -42,8 +45,18 @@ const PRESETS: ZenithLocationPreset[] = [
 
 export function Dashboard() {
   useSatelliteEngine();
-  const { activeCategories, toggleCategory, mobileTab, setMobileTab } = useStore();
   const satStates = useStore((s) => s.satStates);
+  const presentationMode = useStore((s) => s.presentationMode);
+  const leftPanelOpen = useStore((s) => s.leftPanelOpen);
+  const setLeftPanelOpen = useStore((s) => s.setLeftPanelOpen);
+  const selectedId = useStore((s) => s.selectedNoradId);
+
+  // Default the left panel closed on small screens so the globe leads.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setLeftPanelOpen(false);
+    }
+  }, [setLeftPanelOpen]);
 
   const overhead = useMemo(
     () =>
@@ -54,106 +67,129 @@ export function Dashboard() {
     [satStates],
   );
 
+  const hasSelection = selectedId !== null && satStates.some((s) => s.noradId === selectedId);
+
   return (
-    <div className="relative z-10 flex h-dvh flex-col gap-2 p-2 md:gap-3 md:p-3">
-      <TopBar trackedCount={satStates.length} />
+    <div className="relative h-dvh w-full overflow-hidden">
+      {/* GLOBE (full-bleed) */}
+      <GlobeView />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 md:gap-3 lg:grid-cols-[300px_1fr_340px]">
-        {/* LEFT RAIL */}
-        <aside className="hidden min-h-0 flex-col gap-3 overflow-y-auto lg:flex">
-          <Panel title="Observatory">
-            <button className="w-full rounded-lg border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel-2)] px-3 py-2 text-left text-sm text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40">
-              Search satellite or NORAD ID…
-            </button>
-            <LocationPresets />
-          </Panel>
-
-          <Panel title="Categories">
-            <div className="flex flex-col gap-1">
-              {ALL_CATEGORIES.map((c) => {
-                const active = activeCategories.has(c);
-                const count = satStates.filter((s) => s.category === c).length;
-                return (
-                  <button
-                    key={c}
-                    onClick={() => toggleCategory(c)}
-                    className={cn(
-                      "flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                      active
-                        ? "bg-[color:var(--color-zenith)]/12 text-[color:var(--color-ink)]"
-                        : "text-[color:var(--color-ink-faint)] hover:bg-[color:var(--color-space-panel-2)]",
-                    )}
-                  >
-                    <span>{CATEGORY_LABELS[c]}</span>
-                    <span className="flex items-center gap-2">
-                      {active && count > 0 && (
-                        <span className="mono text-[0.62rem] text-[color:var(--color-ink-faint)]">
-                          {count}
-                        </span>
-                      )}
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          active
-                            ? "bg-[color:var(--color-zenith)] shadow-[0_0_8px_var(--color-zenith)]"
-                            : "bg-[color:var(--color-space-line)]",
-                        )}
-                      />
-                    </span>
-                  </button>
-                );
-              })}
+      {/* OVERLAY LAYER */}
+      {!presentationMode && (
+        <>
+          {/* TOP-LEFT: brand · search · left panel */}
+          <div className="pointer-events-none absolute left-3 top-3 z-20 flex max-h-[calc(100dvh-1.5rem)] w-[min(90vw,360px)] flex-col gap-2">
+            <div className="pointer-events-auto flex items-center gap-2">
+              <Brand />
+              <button
+                aria-label="Toggle panel"
+                onClick={() => useStore.getState().toggleLeftPanel()}
+                className="grid size-9 shrink-0 place-items-center rounded-lg border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 text-[color:var(--color-ink-dim)] backdrop-blur transition-colors hover:text-[color:var(--color-ink)]"
+              >
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
-          </Panel>
 
-          <OverheadPanel overhead={overhead} className="flex-1" />
-        </aside>
+            <div className="pointer-events-auto">
+              <SearchBar />
+            </div>
 
-        {/* CENTER GLOBE */}
-        <main className="relative min-h-0">
-          <GlobeView />
-        </main>
+            {leftPanelOpen && (
+              <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
+                <PlacesPanel />
+                <LayersPanel satStates={satStates} />
+                <OverheadPanel overhead={overhead} />
+              </div>
+            )}
+          </div>
 
-        {/* RIGHT RAIL */}
-        <aside className="hidden min-h-0 flex-col gap-3 overflow-y-auto lg:flex">
-          <TelemetryPanel />
-          <SkyPositionPanel />
-          <OverheadSummaryPanel overhead={overhead} className="flex-1" />
-        </aside>
+          {/* TOP-RIGHT: status + demo */}
+          <div className="pointer-events-auto absolute right-3 top-3 z-20 flex items-center gap-2">
+            <span className="hidden items-center gap-1.5 rounded-full border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 px-2.5 py-1.5 text-xs text-[color:var(--color-ink-dim)] backdrop-blur sm:inline-flex">
+              <StatusDot status="ok" />
+              Live · {satStates.length.toLocaleString()} tracked
+            </span>
+            <DemoButton />
+          </div>
+
+          {/* SELECTION CARDS — top-right on desktop, bottom sheet on mobile */}
+          {hasSelection && (
+            <aside
+              className={cn(
+                "pointer-events-auto z-20 flex flex-col gap-2",
+                "absolute lg:right-3 lg:top-16 lg:w-[340px]",
+                "max-lg:bottom-16 max-lg:left-2 max-lg:right-2",
+              )}
+            >
+              <TelemetryPanel />
+              <SkyPositionPanel />
+            </aside>
+          )}
+
+          {/* BOTTOM-LEFT: readout */}
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block">
+            <GlobeReadout />
+          </div>
+        </>
+      )}
+
+      {/* BOTTOM-RIGHT: navigation cluster (always available) */}
+      <div className="absolute bottom-3 right-3 z-20 max-lg:bottom-16">
+        <NavControls />
       </div>
 
-      <StatusStrip computedCount={satStates.length} />
-
       {/* MOBILE TAB BAR */}
-      <nav className="flex items-center justify-around rounded-[var(--radius-panel)] border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)] py-1.5 lg:hidden">
-        {(["globe", "overhead", "sky", "weather", "settings"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setMobileTab(t)}
-            className={cn(
-              "flex-1 rounded-md px-1 py-1.5 text-[0.68rem] font-medium uppercase tracking-wide transition-colors",
-              mobileTab === t
-                ? "text-[color:var(--color-zenith)]"
-                : "text-[color:var(--color-ink-faint)]",
-            )}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
+      {!presentationMode && <MobileTabBar />}
+
+      {/* PRESENTATION MODE exit affordance */}
+      {presentationMode && (
+        <button
+          onClick={() => useStore.getState().togglePresentation()}
+          className="pointer-events-auto absolute right-3 top-3 z-20 rounded-full border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 px-3 py-1.5 text-xs text-[color:var(--color-ink-dim)] backdrop-blur hover:text-[color:var(--color-ink)]"
+        >
+          Exit Presentation
+        </button>
+      )}
     </div>
   );
 }
 
-function LocationPresets() {
+function Brand() {
+  return (
+    <div className="flex items-center gap-2.5 rounded-full border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 px-3 py-1.5 backdrop-blur">
+      <span className="grid size-6 place-items-center rounded-md bg-[color:var(--color-zenith)]/15 text-[color:var(--color-zenith)]">
+        ◎
+      </span>
+      <div className="leading-none">
+        <div className="text-sm font-semibold tracking-tight text-[color:var(--color-ink)]">
+          Project Zenith
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DemoButton() {
+  const presentationMode = useStore((s) => s.presentationMode);
+  const togglePresentation = useStore((s) => s.togglePresentation);
+  return (
+    <button
+      onClick={togglePresentation}
+      className="rounded-full border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 px-3 py-1.5 text-xs text-[color:var(--color-ink-dim)] backdrop-blur transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
+    >
+      {presentationMode ? "Exit" : "Presentation"}
+    </button>
+  );
+}
+
+function PlacesPanel() {
   const setLocation = useStore((s) => s.setLocation);
   const selectObject = useStore((s) => s.selectObject);
 
   const handle = (p: ZenithLocationPreset) => {
-    if (p.kind === "iss") {
-      selectObject(25544);
-      return;
-    }
+    if (p.kind === "iss") return selectObject(25544);
     if (p.kind === "geo") {
       if (typeof navigator !== "undefined" && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -173,34 +209,72 @@ function LocationPresets() {
   };
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-1.5">
-      {PRESETS.map((p) => (
-        <button
-          key={p.label}
-          onClick={() => handle(p)}
-          className="rounded-md border border-[color:var(--color-space-line)] bg-[color:var(--color-space-deep)] px-2 py-1.5 text-xs text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
-        >
-          {p.label}
-        </button>
-      ))}
-    </div>
+    <Panel title="Places">
+      <div className="grid grid-cols-2 gap-1.5">
+        {PRESETS.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => handle(p)}
+            className="rounded-md border border-[color:var(--color-space-line)] bg-[color:var(--color-space-deep)] px-2 py-1.5 text-xs text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
-function OverheadPanel({
-  overhead,
-  className,
-}: {
-  overhead: SatState[];
-  className?: string;
-}) {
+function LayersPanel({ satStates }: { satStates: SatState[] }) {
+  const activeCategories = useStore((s) => s.activeCategories);
+  const toggleCategory = useStore((s) => s.toggleCategory);
+  return (
+    <Panel title="Layers">
+      <div className="flex flex-col gap-1">
+        {ALL_CATEGORIES.map((c) => {
+          const active = activeCategories.has(c);
+          const count = satStates.filter((s) => s.category === c).length;
+          return (
+            <button
+              key={c}
+              onClick={() => toggleCategory(c)}
+              className={cn(
+                "flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                active
+                  ? "bg-[color:var(--color-zenith)]/12 text-[color:var(--color-ink)]"
+                  : "text-[color:var(--color-ink-faint)] hover:bg-[color:var(--color-space-panel-2)]",
+              )}
+            >
+              <span>{CATEGORY_LABELS[c]}</span>
+              <span className="flex items-center gap-2">
+                {active && count > 0 && (
+                  <span className="mono text-[0.62rem] text-[color:var(--color-ink-faint)]">
+                    {count}
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    active
+                      ? "bg-[color:var(--color-zenith)] shadow-[0_0_8px_var(--color-zenith)]"
+                      : "bg-[color:var(--color-space-line)]",
+                  )}
+                />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
+function OverheadPanel({ overhead }: { overhead: SatState[] }) {
   const selectObject = useStore((s) => s.selectObject);
   const selectedId = useStore((s) => s.selectedNoradId);
-
   return (
     <Panel
       title="Overhead Now"
-      className={className}
       action={
         <span className="mono text-[0.62rem] text-[color:var(--color-ink-faint)]">
           {overhead.length}
@@ -253,45 +327,57 @@ function TelemetryPanel() {
 
   const selected = satStates.find((s) => s.noradId === selectedId);
   const ageSec = computedAt ? Math.max(0, Math.round((Date.now() - computedAt) / 1000)) : 0;
-  const source = selected
-    ? provenance[selected.category]?.source ?? "CelesTrak"
-    : "—";
+  const source = selected ? provenance[selected.category]?.source ?? "CelesTrak" : "—";
   const confidence = selected
     ? provenance[selected.category]?.confidence ?? "predicted"
     : "predicted";
 
+  if (!selected) return null;
+
   return (
     <Panel
       title="Selected Object"
-      action={selected ? <ConfidenceBadge value={confidence} /> : undefined}
+      action={
+        <div className="flex items-center gap-2">
+          <ConfidenceBadge value={confidence} />
+          <CloseSelection />
+        </div>
+      }
     >
-      {!selected ? (
-        <EmptyHint text="Select a satellite on the globe or overhead list." />
-      ) : (
-        <>
-          <div className="mb-2">
-            <div className="text-lg font-semibold text-[color:var(--color-ink)]">
-              {selected.name}
-            </div>
-            <div className="mono text-xs text-[color:var(--color-ink-faint)]">
-              NORAD {selected.noradId}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-            <Stat label="Latitude" value={`${selected.lat.toFixed(2)}°`} />
-            <Stat label="Longitude" value={`${selected.lon.toFixed(2)}°`} />
-            <Stat label="Altitude" value={selected.altKm.toFixed(1)} unit="km" />
-            <Stat label="Velocity" value={selected.velocityKmS.toFixed(2)} unit="km/s" />
-            <Stat label="Azimuth" value={`${(selected.azimuthDeg ?? 0).toFixed(1)}°`} />
-            <Stat label="Elevation" value={`${(selected.elevationDeg ?? 0).toFixed(1)}°`} />
-          </div>
-          <div className="mt-3 flex items-center justify-between border-t border-[color:var(--color-space-line)] pt-2 text-xs text-[color:var(--color-ink-faint)]">
-            <span>Source: {source} · SGP4</span>
-            <span className="mono">age {ageSec}s</span>
-          </div>
-        </>
-      )}
+      <div className="mb-2">
+        <div className="text-lg font-semibold text-[color:var(--color-ink)]">
+          {selected.name}
+        </div>
+        <div className="mono text-xs text-[color:var(--color-ink-faint)]">
+          NORAD {selected.noradId}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+        <Stat label="Latitude" value={`${selected.lat.toFixed(2)}°`} />
+        <Stat label="Longitude" value={`${selected.lon.toFixed(2)}°`} />
+        <Stat label="Altitude" value={selected.altKm.toFixed(1)} unit="km" />
+        <Stat label="Velocity" value={selected.velocityKmS.toFixed(2)} unit="km/s" />
+        <Stat label="Azimuth" value={`${(selected.azimuthDeg ?? 0).toFixed(1)}°`} />
+        <Stat label="Elevation" value={`${(selected.elevationDeg ?? 0).toFixed(1)}°`} />
+      </div>
+      <div className="mt-3 flex items-center justify-between border-t border-[color:var(--color-space-line)] pt-2 text-xs text-[color:var(--color-ink-faint)]">
+        <span>Source: {source} · SGP4</span>
+        <span className="mono">age {ageSec}s</span>
+      </div>
     </Panel>
+  );
+}
+
+function CloseSelection() {
+  const selectObject = useStore((s) => s.selectObject);
+  return (
+    <button
+      aria-label="Clear selection"
+      onClick={() => selectObject(null)}
+      className="text-[color:var(--color-ink-faint)] transition-colors hover:text-[color:var(--color-ink)]"
+    >
+      ×
+    </button>
   );
 }
 
@@ -299,14 +385,7 @@ function SkyPositionPanel() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const satStates = useStore((s) => s.satStates);
   const selected = satStates.find((s) => s.noradId === selectedId);
-
-  if (!selected || selected.elevationDeg === undefined) {
-    return (
-      <Panel title="Sky Position">
-        <EmptyHint text="Look angles appear when an object is selected." />
-      </Panel>
-    );
-  }
+  if (!selected || selected.elevationDeg === undefined) return null;
 
   const cls = classifyElevation(selected.elevationDeg);
   const above = selected.elevationDeg > 0;
@@ -344,37 +423,6 @@ function SkyPositionPanel() {
   );
 }
 
-function OverheadSummaryPanel({
-  overhead,
-  className,
-}: {
-  overhead: SatState[];
-  className?: string;
-}) {
-  const best = overhead[0];
-  const zenithCount = overhead.filter(
-    (s) => (s.elevationDeg ?? 0) >= 85,
-  ).length;
-
-  return (
-    <Panel title="Overhead Summary" className={className}>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-        <Stat label="Above horizon" value={overhead.length} />
-        <Stat label="At zenith" value={zenithCount} />
-        <Stat
-          label="Highest now"
-          value={best ? `${best.elevationDeg!.toFixed(0)}°` : "—"}
-        />
-        <Stat label="Top object" value={best ? best.name.split(" ")[0] : "—"} />
-      </div>
-      <p className="mt-3 border-t border-[color:var(--color-space-line)] pt-2 text-xs leading-relaxed text-[color:var(--color-ink-faint)]">
-        Ranked by elevation toward your zenith. Observation score &amp; pass
-        predictions arrive with the weather + sky layers.
-      </p>
-    </Panel>
-  );
-}
-
 function EmptyHint({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 py-2 text-xs text-[color:var(--color-ink-faint)]">
@@ -384,58 +432,29 @@ function EmptyHint({ text }: { text: string }) {
   );
 }
 
-function TopBar({ trackedCount }: { trackedCount: number }) {
-  const presentationMode = useStore((s) => s.presentationMode);
-  const togglePresentation = useStore((s) => s.togglePresentation);
+function MobileTabBar() {
+  const mobileTab = useStore((s) => s.mobileTab);
+  const setMobileTab = useStore((s) => s.setMobileTab);
+  const toggleLeftPanel = useStore((s) => s.toggleLeftPanel);
   return (
-    <header className="flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/80 px-3 py-2 backdrop-blur">
-      <div className="flex items-center gap-2.5">
-        <span className="grid size-7 place-items-center rounded-md bg-[color:var(--color-zenith)]/15 text-[color:var(--color-zenith)]">
-          ◎
-        </span>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight text-[color:var(--color-ink)]">
-            Project Zenith
-          </div>
-          <div className="text-[0.6rem] uppercase tracking-[0.18em] text-[color:var(--color-ink-faint)]">
-            The Celestial Eye
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="hidden items-center gap-1.5 rounded-full border border-[color:var(--color-space-line)] px-2.5 py-1 text-xs text-[color:var(--color-ink-dim)] sm:inline-flex">
-          <StatusDot status="ok" />
-          Live · {trackedCount.toLocaleString()} tracked
-        </span>
+    <nav className="pointer-events-auto absolute inset-x-2 bottom-2 z-30 flex items-center justify-around rounded-[var(--radius-panel)] border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/90 py-1.5 backdrop-blur lg:hidden">
+      {(["globe", "overhead", "sky", "weather", "settings"] as const).map((t) => (
         <button
-          onClick={togglePresentation}
-          className="rounded-full border border-[color:var(--color-space-line)] px-2.5 py-1 text-xs text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40"
+          key={t}
+          onClick={() => {
+            setMobileTab(t);
+            if (t !== "globe") toggleLeftPanel();
+          }}
+          className={cn(
+            "flex-1 rounded-md px-1 py-1.5 text-[0.66rem] font-medium uppercase tracking-wide transition-colors",
+            mobileTab === t
+              ? "text-[color:var(--color-zenith)]"
+              : "text-[color:var(--color-ink-faint)]",
+          )}
         >
-          {presentationMode ? "Exit Demo" : "Demo Mode"}
+          {t}
         </button>
-      </div>
-    </header>
-  );
-}
-
-function StatusStrip({ computedCount }: { computedCount: number }) {
-  return (
-    <footer className="hidden items-center justify-between gap-4 rounded-[var(--radius-panel)] border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/70 px-3 py-1.5 text-xs text-[color:var(--color-ink-faint)] backdrop-blur sm:flex">
-      <div className="flex items-center gap-4">
-        <span className="flex items-center gap-1.5">
-          <StatusDot status="ok" /> CelesTrak TLE
-        </span>
-        <span className="flex items-center gap-1.5">
-          <StatusDot status="ok" /> Open-Notify ISS
-        </span>
-        <span className="flex items-center gap-1.5">
-          <StatusDot status="fallback" /> N2YO Passes
-        </span>
-        <span className="flex items-center gap-1.5">
-          <StatusDot status="ok" /> NASA DONKI
-        </span>
-      </div>
-      <span className="mono">{computedCount} objects · SGP4 client-side · 1 Hz</span>
-    </footer>
+      ))}
+    </nav>
   );
 }

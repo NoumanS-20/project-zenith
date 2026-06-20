@@ -56,6 +56,18 @@ type ZenithState = {
   mobileTab: "globe" | "overhead" | "sky" | "weather" | "settings";
   setMobileTab: (t: ZenithState["mobileTab"]) => void;
 
+  // Globe camera readout (updated by CesiumGlobe on camera change)
+  cameraHeadingDeg: number;
+  eyeAltitudeKm: number;
+  sceneMode: "2d" | "3d";
+  setCameraReadout: (headingDeg: number, eyeAltitudeKm: number) => void;
+  setSceneMode: (m: "2d" | "3d") => void;
+
+  // Google-Earth-style left panel
+  leftPanelOpen: boolean;
+  toggleLeftPanel: () => void;
+  setLeftPanelOpen: (v: boolean) => void;
+
   // Live orbital engine output (updated ~1Hz by useSatelliteEngine)
   tles: TleRecord[];
   setTles: (tles: TleRecord[]) => void;
@@ -110,6 +122,17 @@ export const useStore = create<ZenithState>((set, get) => ({
 
   mobileTab: "globe",
   setMobileTab: (mobileTab) => set({ mobileTab }),
+
+  cameraHeadingDeg: 0,
+  eyeAltitudeKm: 14000,
+  sceneMode: "3d",
+  setCameraReadout: (cameraHeadingDeg, eyeAltitudeKm) =>
+    set({ cameraHeadingDeg, eyeAltitudeKm }),
+  setSceneMode: (sceneMode) => set({ sceneMode }),
+
+  leftPanelOpen: true,
+  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
+  setLeftPanelOpen: (leftPanelOpen) => set({ leftPanelOpen }),
 
   tles: [],
   setTles: (tles) => set({ tles }),
