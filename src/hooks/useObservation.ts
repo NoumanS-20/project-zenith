@@ -29,6 +29,7 @@ export function useObservation(): ObservationResult {
   const cloud = weather.data?.cloudCoverPct;
   const visibilityKm = weather.data?.visibilityKm;
   const cloudSource = weather.data?.provenance.source ?? "—";
+  const bestElKey = Math.round(bestEl);
 
   return useMemo(() => {
     const date = new Date(epoch);
@@ -53,7 +54,7 @@ export function useObservation(): ObservationResult {
     location.lat,
     location.lon,
     timeBucket,
-    Math.round(bestEl),
+    bestElKey,
     cloud,
     visibilityKm,
     cloudSource,

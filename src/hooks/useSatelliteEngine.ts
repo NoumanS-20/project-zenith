@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useStore } from "@/store/useStore";
@@ -40,7 +40,6 @@ export function useSatelliteEngine() {
   const activeCategories = useStore((s) => s.activeCategories);
   const setTles = useStore((s) => s.setTles);
   const setTleProvenance = useStore((s) => s.setTleProvenance);
-  const setSatStates = useStore((s) => s.setSatStates);
 
   const catKey = useMemo(
     () => Array.from(activeCategories).sort().join(","),
@@ -67,14 +66,13 @@ export function useSatelliteEngine() {
 
   // Tick loop — recompute against latest observer + time each second.
   const tles = tleQuery.data?.records;
-  const setSatStatesRef = useRef(setSatStates);
-  setSatStatesRef.current = setSatStates;
   useEffect(() => {
     if (!tles || tles.length === 0) return;
     const tick = () => {
       const state = useStore.getState();
       const states = computeAllStates(tles, state.location, state.effectiveEpoch());
-      setSatStatesRef.current(states, Date.now());
+      // Zustand setters are stable; read fresh to avoid stale closures.
+      state.setSatStates(states, Date.now());
     };
     tick(); // immediate
     const iv = setInterval(tick, TICK_MS);
