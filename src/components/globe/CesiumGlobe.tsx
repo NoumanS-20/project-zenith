@@ -130,8 +130,12 @@ export function CesiumGlobe() {
       baseLayer,
       // Render only when something changes (camera/entities) instead of a
       // continuous loop — big CPU/GPU win and keeps the main thread idle.
-      requestRenderMode: true,
-      maximumRenderTimeChange: Infinity,
+      // requestRenderMode is intentionally OFF: with Cesium loaded as an
+      // external script it mounts after the initial paints, so render-on-demand
+      // misses the globe's first imagery render and the Earth surface never
+      // appears (only the satellite points, which request their own render).
+      // Continuous rendering is the reliable fix; Cesium handles it efficiently.
+      requestRenderMode: false,
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
