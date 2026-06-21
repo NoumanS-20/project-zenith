@@ -9,6 +9,15 @@ Built for **AstralWeb Innovate — Round 2** (AARUUSH '26, SRM Institute of Scie
 - **🔭 Live URL:** **https://project-zenith-alpha.vercel.app**
 - **Repository:** https://github.com/NoumanS-20/project-zenith
 
+## 📸 Screenshots
+
+![Project Zenith — desktop dashboard](docs/screenshots/desktop-dashboard.png)
+_Full-bleed 3D globe with the zenith cone, ISS orbit trail, live overhead list, telemetry, and pass predictor._
+
+| Sky Map | Space Weather | Mobile |
+|---|---|---|
+| ![Sky map](docs/screenshots/sky-map.png) | ![Space weather](docs/screenshots/space-weather.png) | ![Mobile](docs/screenshots/mobile.png) |
+
 ---
 
 ## ✨ Features
@@ -144,13 +153,29 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full diagram and data
 
 ---
 
-## 📋 Project Status
+## 🎬 Demo Script (60 seconds)
 
-Built as a phased sprint (M1–M8). Current: **M1 Foundation ✓ · M2 Data Layer ✓ · M3 Orbital Engine ✓ · M4 Globe (in progress)**.
+1. **Open the app** — it lands straight in the dashboard; the 3D globe loads with live satellites and the ISS already selected.
+2. **Pick a location** — click anywhere on the globe, or use a **preset** (Chennai / New York / Tokyo / London) — the **zenith cone** moves and the camera flies over.
+3. **See what's overhead** — the *Overhead Now* list ranks objects by elevation toward your zenith; click one to select it.
+4. **Track the ISS** — select it; watch the **golden orbit trail** and live telemetry (alt ~408 km, 7.66 km/s, az/el).
+5. **Predict a pass** — open the *Pass Predictor*: next 24 h of passes with an elevation chart, a "visible" badge for dark-sky passes, and **calendar export**.
+6. **Check the sky & weather** — the *Sky* tab shows planets/Moon/Sun + the pass arc; the *Weather* tab shows the **observation score**, live cloud cover, and **NASA space-weather** events.
+7. **Share it** — hit **Share** to copy a deep link that restores the exact view, or **Presentation** mode for a clean full-screen globe.
+
+> Demo-safe: works with zero API keys (falls back to cached/demo data) and drops to a 2D map if the device lacks WebGL.
+
+## ⚠️ Known Limitations
+
+- **Rendered satellite set is curated** (~hundreds across categories), not the full 25k catalog, for smooth in-browser performance. The Web Worker (`src/workers/`) is included to scale up.
+- **N2YO** is wired but pass prediction defaults to local SGP4 (more than accurate enough and not rate-limited).
+- **NASA APOD** depends on `api.nasa.gov`, which occasionally times out; the card degrades gracefully when it does.
+- Pass **visibility** flag uses observer darkness; full satellite-illumination (umbra/penumbra) modelling is a future refinement.
+- Constellation line overlays on the sky map are on the roadmap (currently Sun/Moon/planets + pass arc).
 
 ## 🗺️ Roadmap
 
-Sky-map constellation richness, AR sky mode (device orientation), conjunction alerts (SOCRATES), calendar export for passes, offline PWA mode.
+Constellation line overlays, AR sky mode (device orientation), conjunction alerts (CelesTrak SOCRATES), full 25k-object rendering via the Web Worker, and an offline PWA mode.
 
 ---
 
