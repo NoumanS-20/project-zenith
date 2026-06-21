@@ -59,19 +59,12 @@ export function CesiumGlobe() {
     const ionToken = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN;
     if (ionToken) Cesium.Ion.defaultAccessToken = ionToken;
 
-    // With an Ion token: real satellite imagery (Google-Earth-like).
-    // Without: keyless dark CARTO basemap that still suits the dark theme.
-    // Default world imagery style is aerial-with-labels — the Google-Earth look.
-    const baseLayer = ionToken
-      ? Cesium.ImageryLayer.fromWorldImagery({})
-      : darkImagery();
-
+    // Always start with the keyless CARTO dark basemap so the globe ALWAYS has
+    // imagery, even if Ion fails (bad/limited/rate-limited token). When an Ion
+    // token is present, real satellite imagery is added as an overlay below —
+    // so an Ion failure can never leave the globe blank.
     const viewer = new Cesium.Viewer(containerRef.current, {
-      baseLayer,
-      // Render only when something changes (camera/entities) instead of a
-      // continuous loop — big CPU/GPU win and keeps the main thread idle.
-      requestRenderMode: true,
-      maximumRenderTimeChange: Infinity,
+      baseLayer: darkImagery(),
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -93,6 +86,17 @@ export function CesiumGlobe() {
     scene.fog.enabled = true;
     viewer.cesiumWidget.creditContainer.classList.add("cesium-credits");
     scene.screenSpaceCameraController.minimumZoomDistance = 800_000;
+
+    // Optional real satellite imagery on top of the CARTO base (Google-Earth
+    // look). Added asynchronously; if it fails, the CARTO base still shows.
+    if (ionToken) {
+      try {
+        const world = Cesium.ImageryLayer.fromWorldImagery({});
+        viewer.imageryLayers.add(world);
+      } catch {
+        /* keep CARTO base */
+      }
+    }
 
     const marker = new Cesium.CustomDataSource("observer");
     viewer.dataSources.add(marker);
