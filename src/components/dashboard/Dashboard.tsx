@@ -160,7 +160,7 @@ export function Dashboard() {
                 "max-lg:bottom-16 max-lg:left-2 max-lg:right-2",
               )}
             >
-              <div className="flex max-h-[calc(100dvh-5rem)] flex-col gap-2 overflow-y-auto pr-0.5">
+              <div className="flex max-h-[46dvh] flex-col gap-2 overflow-y-auto pr-0.5 lg:max-h-[calc(100dvh-5rem)]">
                 <TelemetryPanel />
                 <SkyPositionPanel />
                 <PassPredictor />
