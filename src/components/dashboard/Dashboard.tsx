@@ -211,6 +211,7 @@ function PanelTabs() {
       {PANEL_TABS.map((t) => (
         <button
           key={t.id}
+          data-testid={`panel-tab-${t.id}`}
           onClick={() => setMobileTab(t.id)}
           className={cn(
             "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
@@ -537,6 +538,7 @@ function MobileTabBar() {
         return (
           <button
             key={t}
+            data-testid={`mobile-tab-${t}`}
             onClick={() => {
               if (t === "globe") {
                 setLeftPanelOpen(false);

@@ -80,19 +80,19 @@ test.describe("Project Zenith", () => {
   }, testInfo) => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.goto("/");
-    await page.getByRole("button", { name: "Weather", exact: true }).click();
+    await page.getByTestId("panel-tab-weather").click();
     await expect(page.getByText("Space Weather").first()).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByRole("button", { name: "Sky", exact: true }).click();
+    await page.getByTestId("panel-tab-sky").click();
     await expect(page.getByText("Sky Map").first()).toBeVisible();
   });
 
   test("mobile layout shows the bottom tab bar", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile-only layout check");
     await page.goto("/");
-    await expect(page.getByRole("button", { name: "overhead" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "sky" })).toBeVisible();
+    await expect(page.getByTestId("mobile-tab-overhead")).toBeVisible();
+    await expect(page.getByTestId("mobile-tab-sky")).toBeVisible();
     await expect(page.locator("canvas").first()).toBeVisible({ timeout: 40_000 });
   });
 

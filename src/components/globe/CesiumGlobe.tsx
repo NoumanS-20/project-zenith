@@ -68,6 +68,10 @@ export function CesiumGlobe() {
 
     const viewer = new Cesium.Viewer(containerRef.current, {
       baseLayer,
+      // Render only when something changes (camera/entities) instead of a
+      // continuous loop — big CPU/GPU win and keeps the main thread idle.
+      requestRenderMode: true,
+      maximumRenderTimeChange: Infinity,
       baseLayerPicker: false,
       geocoder: false,
       homeButton: false,
@@ -249,6 +253,7 @@ export function CesiumGlobe() {
         destination: Cesium.Cartesian3.fromDegrees(lon, lat, 9_000_000),
         duration: 1.2,
       });
+      viewer.scene.requestRender();
     };
 
     const { lat, lon } = useStore.getState().location;
@@ -287,6 +292,7 @@ export function CesiumGlobe() {
           id: { noradId: s.noradId, name: s.name },
         });
       }
+      viewerRef.current?.scene.requestRender();
     };
 
     render(useStore.getState().satStates, useStore.getState().selectedNoradId);
@@ -334,6 +340,8 @@ export function CesiumGlobe() {
           },
         });
       }
+
+      viewer.scene.requestRender();
 
       // Fly to the satellite's current position (only on user selection).
       if (!doFly) return;
