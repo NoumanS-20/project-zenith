@@ -1,15 +1,59 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import * as Cesium from "cesium";
+import { useEffect, useRef, useState } from "react";
+// Types only — erased at build time. The Cesium *runtime* is loaded as an
+// external script (see loadCesium below), NOT bundled. Bundling Cesium's
+// prebuilt UMD makes the minifier re-emit its inlined wasm as a template
+// literal with octal escapes — an illegal-syntax chunk that hangs the globe.
+// Loading the pristine /cesium/Cesium.js as a global avoids that entirely
+// and keeps Cesium (~5.8MB) out of the app bundle for a faster first load.
+import type * as CesiumNS from "cesium";
 import { useStore } from "@/store/useStore";
 import { toSatrec, propagateSubpoint } from "@/lib/astro/propagate";
 import { registerGlobeApi, clearGlobeApi } from "@/lib/globeControls";
 import type { SatState, SatCategory } from "@/lib/types";
 
-// Cesium loads its Workers/Assets/Widgets from here (staged by copy-cesium.mjs).
-if (typeof window !== "undefined") {
-  (window as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = "/cesium";
+// The external Cesium.js UMD bundle attaches itself to window.Cesium.
+declare global {
+  interface Window {
+    Cesium?: typeof CesiumNS;
+    CESIUM_BASE_URL?: string;
+  }
+}
+
+const CESIUM_SCRIPT_ID = "cesium-umd-script";
+
+/**
+ * Load the pristine prebuilt Cesium from /cesium/Cesium.js (staged by
+ * copy-cesium.mjs) as a one-time external script and resolve window.Cesium.
+ * Idempotent across mounts.
+ */
+function loadCesium(): Promise<typeof CesiumNS> {
+  if (window.Cesium) return Promise.resolve(window.Cesium);
+  // Cesium reads this to find its Workers/Assets/Widgets.
+  window.CESIUM_BASE_URL = "/cesium";
+
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById(CESIUM_SCRIPT_ID) as
+      | HTMLScriptElement
+      | null;
+    if (existing) {
+      if (window.Cesium) return resolve(window.Cesium);
+      existing.addEventListener("load", () =>
+        window.Cesium ? resolve(window.Cesium) : reject(new Error("Cesium global missing after load")),
+      );
+      existing.addEventListener("error", () => reject(new Error("Cesium script failed to load")));
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = CESIUM_SCRIPT_ID;
+    script.src = "/cesium/Cesium.js";
+    script.async = true;
+    script.onload = () =>
+      window.Cesium ? resolve(window.Cesium) : reject(new Error("Cesium global missing after load"));
+    script.onerror = () => reject(new Error("Cesium script failed to load"));
+    document.head.appendChild(script);
+  });
 }
 
 const ZENITH = "#38e1ff";
@@ -26,7 +70,7 @@ const CATEGORY_COLOR: Record<SatCategory, string> = {
 };
 
 /** Dark, keyless CARTO basemap — fits the command-center aesthetic, no Ion token. */
-function darkImagery(): Cesium.ImageryLayer {
+function darkImagery(Cesium: typeof CesiumNS): CesiumNS.ImageryLayer {
   return new Cesium.ImageryLayer(
     new Cesium.UrlTemplateImageryProvider({
       url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
@@ -39,15 +83,31 @@ function darkImagery(): Cesium.ImageryLayer {
 
 export function CesiumGlobe() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<Cesium.Viewer | null>(null);
-  const markerRef = useRef<Cesium.CustomDataSource | null>(null);
-  const trailRef = useRef<Cesium.CustomDataSource | null>(null);
-  const pointsRef = useRef<Cesium.PointPrimitiveCollection | null>(null);
+  const viewerRef = useRef<CesiumNS.Viewer | null>(null);
+  const markerRef = useRef<CesiumNS.CustomDataSource | null>(null);
+  const trailRef = useRef<CesiumNS.CustomDataSource | null>(null);
+  const pointsRef = useRef<CesiumNS.PointPrimitiveCollection | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   // Create the viewer once.
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
 
+    loadCesium()
+      .then((Cesium) => {
+        const container = containerRef.current;
+        if (cancelled || !container || viewerRef.current) return;
+        cleanup = initViewer(Cesium, container);
+      })
+      .catch((err) => {
+        console.error("[CesiumGlobe] failed to load Cesium:", err);
+        if (!cancelled) setLoadError(true);
+      });
+
+    // Synchronously-defined setup, invoked once Cesium is available.
+    function initViewer(Cesium: typeof CesiumNS, container: HTMLDivElement): () => void {
     if (!document.getElementById("cesium-widgets-css")) {
       const link = document.createElement("link");
       link.id = "cesium-widgets-css";
@@ -64,9 +124,9 @@ export function CesiumGlobe() {
     // Default world imagery style is aerial-with-labels — the Google-Earth look.
     const baseLayer = ionToken
       ? Cesium.ImageryLayer.fromWorldImagery({})
-      : darkImagery();
+      : darkImagery(Cesium);
 
-    const viewer = new Cesium.Viewer(containerRef.current, {
+    const viewer = new Cesium.Viewer(container, {
       baseLayer,
       // Render only when something changes (camera/entities) instead of a
       // continuous loop — big CPU/GPU win and keeps the main thread idle.
@@ -107,7 +167,7 @@ export function CesiumGlobe() {
 
     // Click → select a satellite if one was hit, otherwise pick the coordinate.
     const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
-    handler.setInputAction((evt: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
+    handler.setInputAction((evt: CesiumNS.ScreenSpaceEventHandler.PositionedEvent) => {
       const picked = scene.pick(evt.position) as { id?: unknown } | undefined;
       const pid = picked?.id as { noradId?: number } | undefined;
       if (pid && typeof pid.noradId === "number") {
@@ -204,6 +264,12 @@ export function CesiumGlobe() {
       trailRef.current = null;
       pointsRef.current = null;
     };
+    } // end initViewer
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, []);
 
   // Observer marker + zenith cone, reacting to location changes.
@@ -211,7 +277,8 @@ export function CesiumGlobe() {
     const apply = (lat: number, lon: number) => {
       const marker = markerRef.current;
       const viewer = viewerRef.current;
-      if (!marker || !viewer) return;
+      const Cesium = window.Cesium;
+      if (!marker || !viewer || !Cesium) return;
       marker.entities.removeAll();
 
       marker.entities.add({
@@ -273,7 +340,8 @@ export function CesiumGlobe() {
   useEffect(() => {
     const render = (states: SatState[], selectedId: number | null) => {
       const points = pointsRef.current;
-      if (!points) return;
+      const Cesium = window.Cesium;
+      if (!points || !Cesium) return;
       points.removeAll();
       for (const s of states) {
         const isIss = s.noradId === ISS_NORAD;
@@ -307,7 +375,8 @@ export function CesiumGlobe() {
     const drawTrail = (noradId: number | null, doFly: boolean) => {
       const trail = trailRef.current;
       const viewer = viewerRef.current;
-      if (!trail || !viewer) return;
+      const Cesium = window.Cesium;
+      if (!trail || !viewer || !Cesium) return;
       trail.entities.removeAll();
       if (noradId === null) return;
 
@@ -317,7 +386,7 @@ export function CesiumGlobe() {
       if (!satrec) return;
 
       const center = useStore.getState().effectiveEpoch();
-      const positions: Cesium.Cartesian3[] = [];
+      const positions: CesiumNS.Cartesian3[] = [];
       const stepSec = 60;
       const spanSec = 50 * 60; // ~ one LEO orbit either side
       for (let dt = -spanSec; dt <= spanSec; dt += stepSec) {
@@ -382,6 +451,10 @@ export function CesiumGlobe() {
       clearInterval(iv);
     };
   }, []);
+
+  // If the external Cesium script can't load, throw so GlobeErrorBoundary
+  // swaps in the dependency-free 2D fallback instead of hanging forever.
+  if (loadError) throw new Error("Cesium failed to load");
 
   return <div ref={containerRef} className="size-full" />;
 }
