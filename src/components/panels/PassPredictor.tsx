@@ -103,8 +103,8 @@ export function PassPredictor() {
                       <Mini label="Peak" value={fmtTime(p.peakUtc)} />
                       <Mini label="Set" value={fmtTime(p.endUtc)} />
                     </div>
-                    <div className="mt-2 h-20">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="mt-2">
+                      <ResponsiveContainer width="99%" height={80}>
                         <AreaChart
                           data={p.samples.map((s) => ({
                             t: s.t,

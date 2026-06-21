@@ -6,8 +6,8 @@ A real-time celestial intelligence dashboard. Drop a pin anywhere on the globe a
 
 Built for **AstralWeb Innovate — Round 2** (AARUUSH '26, SRM Institute of Science and Technology) by **Team IDSCC**.
 
-- **Live URL:** _coming at deployment (M8)_
-- **Repository:** _this repo_
+- **🔭 Live URL:** **https://project-zenith-alpha.vercel.app**
+- **Repository:** https://github.com/NoumanS-20/project-zenith
 
 ---
 

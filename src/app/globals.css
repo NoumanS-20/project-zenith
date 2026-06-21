@@ -120,6 +120,13 @@ body::before {
   border-radius: 99px;
 }
 
+/* Keyboard focus ring (accessibility) — visible only for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-zenith);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Cesium chrome — blend the widget into the dark theme */
 .cesium-viewer,
 .cesium-widget,

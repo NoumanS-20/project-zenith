@@ -76,6 +76,7 @@ export function SearchBar() {
             }
           }}
           placeholder="Search satellite, NORAD ID, or lat, lon"
+          aria-label="Search satellite by name or NORAD ID, or enter latitude, longitude"
           className="w-full bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-faint)] focus:outline-none"
         />
         {q && (
