@@ -87,6 +87,11 @@ export function Dashboard() {
       className="relative h-dvh w-full overflow-hidden"
       data-reduced-motion={reducedMotion ? "true" : undefined}
     >
+      <h1 className="sr-only">
+        Project Zenith — The Celestial Eye: real-time satellite, ISS, and sky
+        dashboard for any point on Earth
+      </h1>
+
       {/* GLOBE (full-bleed) */}
       <GlobeView />
 
