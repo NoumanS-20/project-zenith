@@ -46,13 +46,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# agent/editor tooling (kept local, never committed)
-/CLAUDE.md
-/AGENTS.md
-/.claude
-/.agents
-/skills-lock.json
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
