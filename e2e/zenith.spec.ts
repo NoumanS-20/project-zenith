@@ -81,11 +81,11 @@ test.describe("Project Zenith", () => {
   }, testInfo) => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.goto("/");
-    await page.getByTestId("panel-tab-weather").click();
+    await page.getByRole("button", { name: /Weather/ }).click();
     await expect(page.getByText("Space Weather").first()).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("panel-tab-sky").click();
+    await page.getByRole("button", { name: /Sky/ }).click();
     await expect(page.getByText("Sky Map").first()).toBeVisible();
   });
 

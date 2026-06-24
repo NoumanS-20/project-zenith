@@ -69,9 +69,9 @@ type ZenithState = {
   setLeftPanelOpen: (v: boolean) => void;
 
   // Desktop collapsed dock (progressive disclosure)
-  dockSection: "layers" | "overhead" | null;
+  dockSection: "layers" | "overhead" | "sky" | "weather" | "settings" | null;
   setDockSection: (s: ZenithState["dockSection"]) => void;
-  toggleDockSection: (s: "layers" | "overhead") => void;
+  toggleDockSection: (s: "layers" | "overhead" | "sky" | "weather" | "settings") => void;
 
   // First-run onboarding cue
   onboardingDismissed: boolean;
