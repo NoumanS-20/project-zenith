@@ -23,6 +23,7 @@ import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { CollapsedDock } from "./CollapsedDock";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
 import { overheadRank, classifyElevation } from "@/lib/astro/observer";
 import { buildObserveQuery } from "@/lib/url-state";
 import { cn } from "@/lib/cn";
@@ -64,6 +65,7 @@ export function Dashboard() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const mobileTab = useStore((s) => s.mobileTab);
   const reducedMotion = useStore((s) => s.reducedMotion);
+  const isMobileLayout = useIsMobileLayout();
 
   // Default the left panel closed on small screens so the globe leads.
   useEffect(() => {
@@ -118,8 +120,8 @@ export function Dashboard() {
               <SearchBar />
             </div>
 
-            {leftPanelOpen && mobileTab !== "globe" && (
-              <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5 lg:hidden">
+            {isMobileLayout && leftPanelOpen && mobileTab !== "globe" && (
+              <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
                 <PanelTabs />
                 {mobileTab === "overhead" && (
                   <>
@@ -178,6 +180,11 @@ export function Dashboard() {
           <div className="absolute bottom-3 left-3 z-20 hidden flex-col gap-2 lg:flex">
             <CollapsedDock satStates={satStates} overhead={overhead} />
             <div className="pointer-events-none"><GlobeReadout /></div>
+          </div>
+
+          {/* BOTTOM-LEFT: readout only (tablet bottom-sheet range) */}
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block lg:hidden">
+            <GlobeReadout />
           </div>
         </>
       )}

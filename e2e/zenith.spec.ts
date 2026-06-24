@@ -54,7 +54,6 @@ test.describe("Project Zenith", () => {
     await page.getByRole("button", { name: /Overhead/ }).click(); // open the dock
     const overhead = page
       .locator("section", { hasText: "Overhead Now" })
-      .filter({ visible: true })
       .first();
     await expect(overhead).toBeVisible();
     const firstItem = overhead.locator("ul button").first();
