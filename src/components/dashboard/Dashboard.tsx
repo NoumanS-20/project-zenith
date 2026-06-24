@@ -12,7 +12,6 @@ import { NavControls } from "@/components/globe/NavControls";
 import { GlobeReadout } from "@/components/globe/GlobeReadout";
 import { SearchBar } from "@/components/panels/SearchBar";
 import { PassPredictor } from "@/components/panels/PassPredictor";
-import { ObservationScorePanel } from "@/components/panels/ObservationScorePanel";
 import { SourceInspector } from "@/components/panels/SourceInspector";
 import { SkyMap } from "@/components/panels/SkyMap";
 import { SpaceWeatherPanel } from "@/components/panels/SpaceWeatherPanel";
@@ -129,7 +128,6 @@ export function Dashboard() {
                     <PlacesPanel />
                     <LayersPanel satStates={satStates} />
                     <OverheadPanel overhead={overhead} />
-                    <ObservationScorePanel />
                   </>
                 )}
                 {mobileTab === "sky" && <SkyMap />}

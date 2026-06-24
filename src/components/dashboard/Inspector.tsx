@@ -2,6 +2,7 @@
 
 import { TelemetryPanel, SkyPositionPanel } from "./Dashboard";
 import { PassPredictor } from "@/components/panels/PassPredictor";
+import { ObservationScorePanel } from "@/components/panels/ObservationScorePanel";
 
 /** Single right-side inspector for the selected object: telemetry, sky
  *  position, and passes stacked in one scroll column (not three loose cards).
@@ -13,6 +14,7 @@ export function Inspector() {
       <TelemetryPanel />
       <SkyPositionPanel />
       <PassPredictor />
+      <ObservationScorePanel />
     </div>
   );
 }
