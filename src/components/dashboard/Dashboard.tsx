@@ -21,6 +21,7 @@ import { ObservingConditions } from "@/components/panels/ObservingConditions";
 import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { CollapsedDock } from "./CollapsedDock";
+import { Inspector } from "./Inspector";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
@@ -168,11 +169,7 @@ export function Dashboard() {
                 "max-lg:bottom-16 max-lg:left-2 max-lg:right-2",
               )}
             >
-              <div className="flex max-h-[46dvh] flex-col gap-2 overflow-y-auto pr-0.5 lg:max-h-[calc(100dvh-5rem)]">
-                <TelemetryPanel />
-                <SkyPositionPanel />
-                <PassPredictor />
-              </div>
+              <Inspector />
             </aside>
           )}
 
@@ -427,7 +424,7 @@ export function OverheadPanel({ overhead }: { overhead: SatState[] }) {
   );
 }
 
-function TelemetryPanel() {
+export function TelemetryPanel() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const satStates = useStore((s) => s.satStates);
   const computedAt = useStore((s) => s.satComputedAt);
@@ -489,7 +486,7 @@ function CloseSelection() {
   );
 }
 
-function SkyPositionPanel() {
+export function SkyPositionPanel() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const satStates = useStore((s) => s.satStates);
   const selected = satStates.find((s) => s.noradId === selectedId);
