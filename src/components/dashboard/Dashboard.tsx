@@ -20,6 +20,7 @@ import { ApodCard } from "@/components/panels/ApodCard";
 import { ObservingConditions } from "@/components/panels/ObservingConditions";
 import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
+import { CollapsedDock } from "./CollapsedDock";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
 import { overheadRank, classifyElevation } from "@/lib/astro/observer";
@@ -118,7 +119,7 @@ export function Dashboard() {
             </div>
 
             {leftPanelOpen && mobileTab !== "globe" && (
-              <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
+              <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5 lg:hidden">
                 <PanelTabs />
                 {mobileTab === "overhead" && (
                   <>
@@ -173,9 +174,10 @@ export function Dashboard() {
             </aside>
           )}
 
-          {/* BOTTOM-LEFT: readout */}
-          <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block">
-            <GlobeReadout />
+          {/* BOTTOM-LEFT: dock + readout (desktop) */}
+          <div className="absolute bottom-3 left-3 z-20 hidden flex-col gap-2 lg:flex">
+            <CollapsedDock satStates={satStates} overhead={overhead} />
+            <div className="pointer-events-none"><GlobeReadout /></div>
           </div>
         </>
       )}
@@ -324,7 +326,7 @@ function PlacesPanel() {
   );
 }
 
-function LayersPanel({ satStates }: { satStates: SatState[] }) {
+export function LayersPanel({ satStates }: { satStates: SatState[] }) {
   const activeCategories = useStore((s) => s.activeCategories);
   const toggleCategory = useStore((s) => s.toggleCategory);
   return (
@@ -368,7 +370,7 @@ function LayersPanel({ satStates }: { satStates: SatState[] }) {
   );
 }
 
-function OverheadPanel({ overhead }: { overhead: SatState[] }) {
+export function OverheadPanel({ overhead }: { overhead: SatState[] }) {
   const selectObject = useStore((s) => s.selectObject);
   const selectedId = useStore((s) => s.selectedNoradId);
   return (
