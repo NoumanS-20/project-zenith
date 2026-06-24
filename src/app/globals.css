@@ -18,7 +18,12 @@
   /* Text */
   --color-ink: #eaf2ff;
   --color-ink-dim: #aebfdd;
-  --color-ink-faint: #8094bb;
+  --color-ink-faint: #93a6cc; /* was #8094bb — higher contrast on tinted panels */
+
+  /* Color roles (do not use decoratively):
+     zenith (cyan)  = live data, interactive, selected
+     solar  (amber) = ISS + zenith hero moment ONLY (trail, at-zenith star, ring)
+     aurora/plasma/flare = confidence + alert states only */
 
   /* Mission accents */
   --color-zenith: #38e1ff; /* primary cyan */
