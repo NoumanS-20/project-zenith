@@ -388,10 +388,14 @@ export function OverheadPanel({ overhead }: { overhead: SatState[] }) {
         <EmptyHint text="Computing overhead objects…" />
       ) : (
         <ul className="flex flex-col gap-1.5">
-          {overhead.map((s) => {
+          {overhead.map((s, i) => {
             const cls = classifyElevation(s.elevationDeg ?? -90);
             return (
-              <li key={s.noradId}>
+              <li
+                key={s.noradId}
+                className="stagger-item"
+                style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
+              >
                 <button
                   onClick={() => selectObject(s.noradId)}
                   className={cn(

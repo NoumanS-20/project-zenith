@@ -144,6 +144,17 @@ body::before {
       transform: translateY(8px) scale(0.97);
     }
   }
+  .stagger-item {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: stagger-in 280ms var(--ease-out) forwards;
+  }
+  @keyframes stagger-in {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* Scrollbars */
@@ -209,4 +220,10 @@ body::before {
 
 [data-reduced-motion="true"] .reveal {
   transform: none !important;
+}
+
+[data-reduced-motion="true"] .stagger-item {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
 }
