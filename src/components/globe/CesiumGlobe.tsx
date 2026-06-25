@@ -11,6 +11,7 @@ import { registerGlobeApi, clearGlobeApi } from "@/lib/globeControls";
 import type { SatState, SatCategory } from "@/lib/types";
 
 const ZENITH = "#38e1ff";
+const SOLAR = "#ffb454"; // amber — reserved for ISS + the zenith signature ring
 const ISS_NORAD = 25544;
 
 const CATEGORY_COLOR: Record<SatCategory, string> = {
@@ -250,6 +251,43 @@ function init(Cesium: typeof CesiumNS, container: HTMLDivElement): () => void {
         numberOfVerticalLines: 8,
       },
     });
+    // --- Signature: azimuth bearing ring (N/E/S/W) around the observer ---
+    const ringRadius = 520_000; // meters
+    const ringPts: CesiumNS.Cartesian3[] = [];
+    for (let deg = 0; deg <= 360; deg += 6) {
+      const rad = Cesium.Math.toRadians(deg);
+      // offset in degrees lat/lon approx (small circle near the observer)
+      const dLat = (ringRadius / 111_320) * Math.cos(rad);
+      const dLon =
+        (ringRadius / (111_320 * Math.cos(Cesium.Math.toRadians(lat)))) *
+        Math.sin(rad);
+      ringPts.push(Cesium.Cartesian3.fromDegrees(lon + dLon, lat + dLat, 0));
+    }
+    marker.entities.add({
+      polyline: {
+        positions: ringPts,
+        width: 1.5,
+        material: Cesium.Color.fromCssColorString(SOLAR).withAlpha(0.45),
+        clampToGround: true,
+      },
+    });
+    // Cardinal tick poles (N, E, S, W) — short vertical accents
+    const cardinals: { az: number }[] = [{ az: 0 }, { az: 90 }, { az: 180 }, { az: 270 }];
+    for (const c of cardinals) {
+      const rad = Cesium.Math.toRadians(c.az);
+      const dLat = (ringRadius / 111_320) * Math.cos(rad);
+      const dLon =
+        (ringRadius / (111_320 * Math.cos(Cesium.Math.toRadians(lat)))) *
+        Math.sin(rad);
+      marker.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lon + dLon, lat + dLat, 60_000),
+        point: {
+          pixelSize: 4,
+          color: Cesium.Color.fromCssColorString(SOLAR).withAlpha(0.9),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      });
+    }
     scene.requestRender();
   };
 
@@ -354,9 +392,35 @@ function init(Cesium: typeof CesiumNS, container: HTMLDivElement): () => void {
     20_000,
   );
 
+  // --- Presentation mode: slow ambient camera drift (reduced-motion aware) ---
+  const osReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  let driftOn = false;
+  const driftListener = () => {
+    if (!driftOn) return;
+    // small constant yaw; requestRender keeps frames coming while drifting
+    cam.rotateRight(0.0008);
+    scene.requestRender();
+  };
+  scene.preRender.addEventListener(driftListener);
+
+  const refreshDrift = () => {
+    const s = useStore.getState();
+    // Respect BOTH the in-app manual toggle (store) AND the OS media query.
+    driftOn = s.presentationMode && !s.reducedMotion && !osReducedMotion();
+    if (driftOn) scene.requestRender();
+  };
+  refreshDrift();
+  // Re-evaluate on any store change (reducedMotion or presentationMode flip).
+  const unsubPresent = useStore.subscribe(() => refreshDrift());
+
   return () => {
     clearInterval(trailIv);
     unsub();
+    scene.preRender.removeEventListener(driftListener);
+    unsubPresent();
     scene.camera.changed.removeEventListener(syncReadout);
     clearGlobeApi();
     handler.destroy();

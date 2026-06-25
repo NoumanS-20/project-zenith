@@ -51,6 +51,7 @@ test.describe("Project Zenith", () => {
   }, testInfo) => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.goto("/");
+    await page.getByRole("button", { name: /Overhead/ }).click(); // open the dock
     const overhead = page
       .locator("section", { hasText: "Overhead Now" })
       .first();
@@ -80,11 +81,11 @@ test.describe("Project Zenith", () => {
   }, testInfo) => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.goto("/");
-    await page.getByTestId("panel-tab-weather").click();
+    await page.getByRole("button", { name: /Weather/ }).click();
     await expect(page.getByText("Space Weather").first()).toBeVisible({
       timeout: 30_000,
     });
-    await page.getByTestId("panel-tab-sky").click();
+    await page.getByRole("button", { name: /Sky/ }).click();
     await expect(page.getByText("Sky Map").first()).toBeVisible();
   });
 
@@ -102,8 +103,10 @@ test.describe("Project Zenith", () => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.route("**/api/tle**", (route) => route.abort());
     await page.goto("/");
-    // App shell still renders — no crash, with an empty-state hint.
+    // App shell still renders — no crash.
     await expect(page.getByText("Project Zenith").first()).toBeVisible();
+    // Overhead now lives in the collapsed dock; open it to see the empty-state hint.
+    await page.getByRole("button", { name: /Overhead/ }).click();
     await expect(page.getByText(/Computing overhead objects/i)).toBeVisible({
       timeout: 20_000,
     });

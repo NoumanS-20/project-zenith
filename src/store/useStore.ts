@@ -68,6 +68,15 @@ type ZenithState = {
   toggleLeftPanel: () => void;
   setLeftPanelOpen: (v: boolean) => void;
 
+  // Desktop collapsed dock (progressive disclosure)
+  dockSection: "layers" | "overhead" | "sky" | "weather" | "settings" | null;
+  setDockSection: (s: ZenithState["dockSection"]) => void;
+  toggleDockSection: (s: "layers" | "overhead" | "sky" | "weather" | "settings") => void;
+
+  // First-run onboarding cue
+  onboardingDismissed: boolean;
+  dismissOnboarding: () => void;
+
   // Live orbital engine output (updated ~1Hz by useSatelliteEngine)
   tles: TleRecord[];
   setTles: (tles: TleRecord[]) => void;
@@ -133,6 +142,20 @@ export const useStore = create<ZenithState>((set, get) => ({
   leftPanelOpen: true,
   toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
   setLeftPanelOpen: (leftPanelOpen) => set({ leftPanelOpen }),
+
+  dockSection: null,
+  setDockSection: (dockSection) => set({ dockSection }),
+  toggleDockSection: (s) =>
+    set((st) => ({ dockSection: st.dockSection === s ? null : s })),
+
+  onboardingDismissed:
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("zenith.onboarded") === "1",
+  dismissOnboarding: () => {
+    if (typeof window !== "undefined")
+      window.localStorage.setItem("zenith.onboarded", "1");
+    set({ onboardingDismissed: true });
+  },
 
   tles: [],
   setTles: (tles) => set({ tles }),

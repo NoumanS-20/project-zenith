@@ -17,7 +17,7 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn("panel flex flex-col", className)}>
+    <section className={cn("panel reveal flex flex-col", className)}>
       {title && (
         <header className="flex items-center justify-between gap-2 px-3.5 pt-3 pb-2">
           <h2 className="panel-heading">{title}</h2>

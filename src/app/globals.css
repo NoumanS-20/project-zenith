@@ -18,7 +18,12 @@
   /* Text */
   --color-ink: #eaf2ff;
   --color-ink-dim: #aebfdd;
-  --color-ink-faint: #8094bb;
+  --color-ink-faint: #93a6cc; /* was #8094bb — higher contrast on tinted panels */
+
+  /* Color roles (do not use decoratively):
+     zenith (cyan)  = live data, interactive, selected
+     solar  (amber) = ISS + zenith hero moment ONLY (trail, at-zenith star, ring)
+     aurora/plasma/flare = confidence + alert states only */
 
   /* Mission accents */
   --color-zenith: #38e1ff; /* primary cyan */
@@ -28,10 +33,19 @@
   --color-solar: #ffb454; /* amber */
   --color-flare: #ff5d6c; /* red/alert */
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-mono-zenith);
 
   --radius-panel: 14px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 140ms;
+  --dur-enter: 220ms;
+  --dur-exit: 160ms;
+  --dur-dock: 250ms;
 }
 
 :root {
@@ -104,6 +118,43 @@ body::before {
   .hairline {
     border-color: var(--color-space-line);
   }
+  h1, h2, .display {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  /* Press feedback for any pressable */
+  .press {
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+  /* Enter reveal: fade + subtle rise. Visible by default; @starting-style
+     supplies the from-state so content never ships hidden. */
+  .reveal {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity var(--dur-enter) var(--ease-out),
+      transform var(--dur-enter) var(--ease-out);
+  }
+  @starting-style {
+    .reveal {
+      opacity: 0;
+      transform: translateY(8px) scale(0.97);
+    }
+  }
+  .stagger-item {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: stagger-in 280ms var(--ease-out) forwards;
+  }
+  @keyframes stagger-in {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* Scrollbars */
@@ -165,4 +216,14 @@ body::before {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+}
+
+[data-reduced-motion="true"] .reveal {
+  transform: none !important;
+}
+
+[data-reduced-motion="true"] .stagger-item {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
 }

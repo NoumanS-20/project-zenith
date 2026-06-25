@@ -11,8 +11,6 @@ import { GlobeView } from "@/components/globe/GlobeView";
 import { NavControls } from "@/components/globe/NavControls";
 import { GlobeReadout } from "@/components/globe/GlobeReadout";
 import { SearchBar } from "@/components/panels/SearchBar";
-import { PassPredictor } from "@/components/panels/PassPredictor";
-import { ObservationScorePanel } from "@/components/panels/ObservationScorePanel";
 import { SourceInspector } from "@/components/panels/SourceInspector";
 import { SkyMap } from "@/components/panels/SkyMap";
 import { SpaceWeatherPanel } from "@/components/panels/SpaceWeatherPanel";
@@ -20,8 +18,13 @@ import { ApodCard } from "@/components/panels/ApodCard";
 import { ObservingConditions } from "@/components/panels/ObservingConditions";
 import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
+import { CollapsedDock } from "./CollapsedDock";
+import { Inspector } from "./Inspector";
+import { OnboardingCue } from "./OnboardingCue";
+import { TelemetryStrip } from "./TelemetryStrip";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
 import { overheadRank, classifyElevation } from "@/lib/astro/observer";
 import { buildObserveQuery } from "@/lib/url-state";
 import { cn } from "@/lib/cn";
@@ -36,22 +39,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   debris: "Debris",
 };
 
-type ZenithLocationPreset = {
-  label: string;
-  kind?: "geo" | "iss";
-  lat?: number;
-  lon?: number;
-  locLabel?: string;
-};
-
-const PRESETS: ZenithLocationPreset[] = [
-  { label: "My Location", kind: "geo" },
-  { label: "Chennai", lat: 13.0827, lon: 80.2707, locLabel: "Chennai, India" },
-  { label: "New York", lat: 40.7128, lon: -74.006, locLabel: "New York, USA" },
-  { label: "Tokyo", lat: 35.6762, lon: 139.6503, locLabel: "Tokyo, Japan" },
-  { label: "London", lat: 51.5074, lon: -0.1278, locLabel: "London, UK" },
-  { label: "ISS Focus", kind: "iss" },
-];
 
 export function Dashboard() {
   useSatelliteEngine();
@@ -63,6 +50,7 @@ export function Dashboard() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const mobileTab = useStore((s) => s.mobileTab);
   const reducedMotion = useStore((s) => s.reducedMotion);
+  const isMobileLayout = useIsMobileLayout();
 
   // Default the left panel closed on small screens so the globe leads.
   useEffect(() => {
@@ -117,15 +105,13 @@ export function Dashboard() {
               <SearchBar />
             </div>
 
-            {leftPanelOpen && mobileTab !== "globe" && (
+            {isMobileLayout && leftPanelOpen && mobileTab !== "globe" && (
               <div className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
                 <PanelTabs />
                 {mobileTab === "overhead" && (
                   <>
-                    <PlacesPanel />
                     <LayersPanel satStates={satStates} />
                     <OverheadPanel overhead={overhead} />
-                    <ObservationScorePanel />
                   </>
                 )}
                 {mobileTab === "sky" && <SkyMap />}
@@ -156,6 +142,9 @@ export function Dashboard() {
             <DemoButton />
           </div>
 
+          {/* ONBOARDING CUE */}
+          <OnboardingCue />
+
           {/* SELECTION CARDS — top-right on desktop, bottom sheet on mobile */}
           {hasSelection && (
             <aside
@@ -165,18 +154,22 @@ export function Dashboard() {
                 "max-lg:bottom-16 max-lg:left-2 max-lg:right-2",
               )}
             >
-              <div className="flex max-h-[46dvh] flex-col gap-2 overflow-y-auto pr-0.5 lg:max-h-[calc(100dvh-5rem)]">
-                <TelemetryPanel />
-                <SkyPositionPanel />
-                <PassPredictor />
-              </div>
+              <Inspector />
             </aside>
           )}
 
-          {/* BOTTOM-LEFT: readout */}
-          <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block">
+          {/* BOTTOM-LEFT: dock + readout (desktop) */}
+          <div className="absolute bottom-3 left-3 z-20 hidden flex-col gap-2 lg:flex">
+            <CollapsedDock satStates={satStates} overhead={overhead} />
+            <div className="pointer-events-none"><GlobeReadout /></div>
+          </div>
+
+          {/* BOTTOM-LEFT: readout only (tablet bottom-sheet range) */}
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block lg:hidden">
             <GlobeReadout />
           </div>
+
+          <TelemetryStrip />
         </>
       )}
 
@@ -283,48 +276,8 @@ function DemoButton() {
   );
 }
 
-function PlacesPanel() {
-  const setLocation = useStore((s) => s.setLocation);
-  const selectObject = useStore((s) => s.selectObject);
 
-  const handle = (p: ZenithLocationPreset) => {
-    if (p.kind === "iss") return selectObject(25544);
-    if (p.kind === "geo") {
-      if (typeof navigator !== "undefined" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) =>
-            setLocation({
-              lat: Number(pos.coords.latitude.toFixed(4)),
-              lon: Number(pos.coords.longitude.toFixed(4)),
-              alt: 0,
-              label: "My Location",
-            }),
-          () => setLocation({ lat: 13.0827, lon: 80.2707, label: "Chennai (fallback)" }),
-        );
-      }
-      return;
-    }
-    setLocation({ lat: p.lat!, lon: p.lon!, alt: 0, label: p.locLabel });
-  };
-
-  return (
-    <Panel title="Places">
-      <div className="grid grid-cols-2 gap-1.5">
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => handle(p)}
-            className="rounded-md border border-[color:var(--color-space-line)] bg-[color:var(--color-space-deep)] px-2 py-1.5 text-xs text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function LayersPanel({ satStates }: { satStates: SatState[] }) {
+export function LayersPanel({ satStates }: { satStates: SatState[] }) {
   const activeCategories = useStore((s) => s.activeCategories);
   const toggleCategory = useStore((s) => s.toggleCategory);
   return (
@@ -368,7 +321,7 @@ function LayersPanel({ satStates }: { satStates: SatState[] }) {
   );
 }
 
-function OverheadPanel({ overhead }: { overhead: SatState[] }) {
+export function OverheadPanel({ overhead }: { overhead: SatState[] }) {
   const selectObject = useStore((s) => s.selectObject);
   const selectedId = useStore((s) => s.selectedNoradId);
   return (
@@ -384,10 +337,14 @@ function OverheadPanel({ overhead }: { overhead: SatState[] }) {
         <EmptyHint text="Computing overhead objects…" />
       ) : (
         <ul className="flex flex-col gap-1.5">
-          {overhead.map((s) => {
+          {overhead.map((s, i) => {
             const cls = classifyElevation(s.elevationDeg ?? -90);
             return (
-              <li key={s.noradId}>
+              <li
+                key={s.noradId}
+                className="stagger-item"
+                style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
+              >
                 <button
                   onClick={() => selectObject(s.noradId)}
                   className={cn(
@@ -418,7 +375,7 @@ function OverheadPanel({ overhead }: { overhead: SatState[] }) {
   );
 }
 
-function TelemetryPanel() {
+export function TelemetryPanel() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const satStates = useStore((s) => s.satStates);
   const computedAt = useStore((s) => s.satComputedAt);
@@ -480,7 +437,7 @@ function CloseSelection() {
   );
 }
 
-function SkyPositionPanel() {
+export function SkyPositionPanel() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const satStates = useStore((s) => s.satStates);
   const selected = satStates.find((s) => s.noradId === selectedId);
@@ -531,6 +488,39 @@ function EmptyHint({ text }: { text: string }) {
   );
 }
 
+const TAB_ICONS: Record<string, React.ReactNode> = {
+  globe: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.6-3.8-9S9.5 5.5 12 3Z" />
+    </svg>
+  ),
+  overhead: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M12 3v3M12 3 5 8M12 3l7 5" />
+      <circle cx="12" cy="14" r="3" />
+    </svg>
+  ),
+  sky: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+      <circle cx="12" cy="12" r="3.5" />
+    </svg>
+  ),
+  weather: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A3.5 3.5 0 0 1 17 18Z" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
+    </svg>
+  ),
+};
+
 function MobileTabBar() {
   const mobileTab = useStore((s) => s.mobileTab);
   const leftPanelOpen = useStore((s) => s.leftPanelOpen);
@@ -553,13 +543,14 @@ function MobileTabBar() {
               }
             }}
             className={cn(
-              "flex-1 rounded-md px-1 py-1.5 text-[0.66rem] font-medium uppercase tracking-wide transition-colors",
+              "flex flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-1 text-[0.58rem] font-medium uppercase tracking-wide transition-colors",
               active
                 ? "text-[color:var(--color-zenith)]"
                 : "text-[color:var(--color-ink-faint)]",
             )}
           >
-            {t}
+            <span aria-hidden="true">{TAB_ICONS[t]}</span>
+            <span>{t}</span>
           </button>
         );
       })}
