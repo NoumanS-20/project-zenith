@@ -55,3 +55,13 @@ next-env.d.ts
 # playwright mcp artifacts
 /.playwright-mcp/
 prod-check.jpeg
+
+# local AI tooling / installed skills / SDD scratch (not part of the project)
+.agents/
+.codex/
+.claude/skills/
+.github/skills/
+.github/hooks/
+.superpowers/
+skills-lock.json
+docs/superpowers/
