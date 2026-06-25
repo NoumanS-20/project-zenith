@@ -2,6 +2,19 @@
 
 import { useStore } from "@/store/useStore";
 
+/** One label/value pair in the strip. Module-scoped so it isn't recreated on
+ *  every render (and to satisfy react-hooks/static-components). */
+function Item({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span className="text-[0.58rem] uppercase tracking-wider text-[color:var(--color-ink-faint)]">
+        {label}
+      </span>
+      <span className="mono text-sm text-[color:var(--color-ink)]">{value}</span>
+    </span>
+  );
+}
+
 /** Slim bottom strip with the selected object's key live numbers. Desktop only
  *  (lg:flex); renders nothing when no object is selected. Numbers update each
  *  ~1Hz tick — do NOT animate them (animation on 1Hz updates = noise). */
@@ -10,15 +23,6 @@ export function TelemetryStrip() {
   const satStates = useStore((s) => s.satStates);
   const sel = satStates.find((s) => s.noradId === selectedId);
   if (!sel) return null;
-
-  const Item = ({ label, value }: { label: string; value: string }) => (
-    <span className="flex items-baseline gap-1.5">
-      <span className="text-[0.58rem] uppercase tracking-wider text-[color:var(--color-ink-faint)]">
-        {label}
-      </span>
-      <span className="mono text-sm text-[color:var(--color-ink)]">{value}</span>
-    </span>
-  );
 
   return (
     <div className="reveal pointer-events-none absolute inset-x-0 bottom-3 z-10 hidden justify-center lg:flex">

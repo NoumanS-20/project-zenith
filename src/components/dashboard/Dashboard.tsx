@@ -11,7 +11,6 @@ import { GlobeView } from "@/components/globe/GlobeView";
 import { NavControls } from "@/components/globe/NavControls";
 import { GlobeReadout } from "@/components/globe/GlobeReadout";
 import { SearchBar } from "@/components/panels/SearchBar";
-import { PassPredictor } from "@/components/panels/PassPredictor";
 import { SourceInspector } from "@/components/panels/SourceInspector";
 import { SkyMap } from "@/components/panels/SkyMap";
 import { SpaceWeatherPanel } from "@/components/panels/SpaceWeatherPanel";
