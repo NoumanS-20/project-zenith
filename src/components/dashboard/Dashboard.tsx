@@ -21,6 +21,7 @@ import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { CollapsedDock } from "./CollapsedDock";
 import { Inspector } from "./Inspector";
+import { TelemetryStrip } from "./TelemetryStrip";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
@@ -164,6 +165,8 @@ export function Dashboard() {
           <div className="pointer-events-none absolute bottom-3 left-3 z-20 hidden sm:block lg:hidden">
             <GlobeReadout />
           </div>
+
+          <TelemetryStrip />
         </>
       )}
 
