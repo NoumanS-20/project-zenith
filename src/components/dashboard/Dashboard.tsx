@@ -38,22 +38,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   debris: "Debris",
 };
 
-type ZenithLocationPreset = {
-  label: string;
-  kind?: "geo" | "iss";
-  lat?: number;
-  lon?: number;
-  locLabel?: string;
-};
-
-const PRESETS: ZenithLocationPreset[] = [
-  { label: "My Location", kind: "geo" },
-  { label: "Chennai", lat: 13.0827, lon: 80.2707, locLabel: "Chennai, India" },
-  { label: "New York", lat: 40.7128, lon: -74.006, locLabel: "New York, USA" },
-  { label: "Tokyo", lat: 35.6762, lon: 139.6503, locLabel: "Tokyo, Japan" },
-  { label: "London", lat: 51.5074, lon: -0.1278, locLabel: "London, UK" },
-  { label: "ISS Focus", kind: "iss" },
-];
 
 export function Dashboard() {
   useSatelliteEngine();
@@ -125,7 +109,6 @@ export function Dashboard() {
                 <PanelTabs />
                 {mobileTab === "overhead" && (
                   <>
-                    <PlacesPanel />
                     <LayersPanel satStates={satStates} />
                     <OverheadPanel overhead={overhead} />
                   </>
@@ -287,46 +270,6 @@ function DemoButton() {
   );
 }
 
-function PlacesPanel() {
-  const setLocation = useStore((s) => s.setLocation);
-  const selectObject = useStore((s) => s.selectObject);
-
-  const handle = (p: ZenithLocationPreset) => {
-    if (p.kind === "iss") return selectObject(25544);
-    if (p.kind === "geo") {
-      if (typeof navigator !== "undefined" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) =>
-            setLocation({
-              lat: Number(pos.coords.latitude.toFixed(4)),
-              lon: Number(pos.coords.longitude.toFixed(4)),
-              alt: 0,
-              label: "My Location",
-            }),
-          () => setLocation({ lat: 13.0827, lon: 80.2707, label: "Chennai (fallback)" }),
-        );
-      }
-      return;
-    }
-    setLocation({ lat: p.lat!, lon: p.lon!, alt: 0, label: p.locLabel });
-  };
-
-  return (
-    <Panel title="Places">
-      <div className="grid grid-cols-2 gap-1.5">
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => handle(p)}
-            className="rounded-md border border-[color:var(--color-space-line)] bg-[color:var(--color-space-deep)] px-2 py-1.5 text-xs text-[color:var(--color-ink-dim)] transition-colors hover:border-[color:var(--color-zenith)]/40 hover:text-[color:var(--color-ink)]"
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-    </Panel>
-  );
-}
 
 export function LayersPanel({ satStates }: { satStates: SatState[] }) {
   const activeCategories = useStore((s) => s.activeCategories);
