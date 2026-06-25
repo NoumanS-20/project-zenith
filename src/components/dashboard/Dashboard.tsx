@@ -489,6 +489,39 @@ function EmptyHint({ text }: { text: string }) {
   );
 }
 
+const TAB_ICONS: Record<string, React.ReactNode> = {
+  globe: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.6-3.8-9S9.5 5.5 12 3Z" />
+    </svg>
+  ),
+  overhead: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M12 3v3M12 3 5 8M12 3l7 5" />
+      <circle cx="12" cy="14" r="3" />
+    </svg>
+  ),
+  sky: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" />
+      <circle cx="12" cy="12" r="3.5" />
+    </svg>
+  ),
+  weather: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A3.5 3.5 0 0 1 17 18Z" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" />
+    </svg>
+  ),
+};
+
 function MobileTabBar() {
   const mobileTab = useStore((s) => s.mobileTab);
   const leftPanelOpen = useStore((s) => s.leftPanelOpen);
@@ -511,13 +544,14 @@ function MobileTabBar() {
               }
             }}
             className={cn(
-              "flex-1 rounded-md px-1 py-1.5 text-[0.66rem] font-medium uppercase tracking-wide transition-colors",
+              "flex flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-1 text-[0.58rem] font-medium uppercase tracking-wide transition-colors",
               active
                 ? "text-[color:var(--color-zenith)]"
                 : "text-[color:var(--color-ink-faint)]",
             )}
           >
-            {t}
+            <span aria-hidden="true">{TAB_ICONS[t]}</span>
+            <span>{t}</span>
           </button>
         );
       })}
