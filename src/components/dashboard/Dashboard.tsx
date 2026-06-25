@@ -39,6 +39,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   debris: "Debris",
 };
 
+/** Legend dot colors — must match CATEGORY_COLOR in CesiumGlobe so the Layers
+ *  panel reads as a legend for the dots on the globe. */
+const CATEGORY_DOT: Record<string, string> = {
+  stations: "#38e1ff",
+  brightest: "#ffffff",
+  starlink: "#7c5cff",
+  navigation: "#34f5c5",
+  weather: "#5db4ff",
+  debris: "#6b7da6",
+};
+
 
 export function Dashboard() {
   useSatelliteEngine();
@@ -93,7 +104,7 @@ export function Dashboard() {
               <button
                 aria-label="Toggle panel"
                 onClick={() => useStore.getState().toggleLeftPanel()}
-                className="grid size-9 shrink-0 place-items-center rounded-lg border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 text-[color:var(--color-ink-dim)] backdrop-blur transition-colors hover:text-[color:var(--color-ink)]"
+                className="grid size-9 shrink-0 place-items-center rounded-lg border border-[color:var(--color-space-edge)] bg-[color:var(--color-space-panel)]/85 text-[color:var(--color-ink-dim)] backdrop-blur transition-colors hover:text-[color:var(--color-ink)] lg:hidden"
               >
                 <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 6h16M4 12h16M4 18h16" />
@@ -305,12 +316,15 @@ export function LayersPanel({ satStates }: { satStates: SatState[] }) {
                   </span>
                 )}
                 <span
-                  className={cn(
-                    "size-2 rounded-full",
+                  className="size-2 rounded-full transition-all"
+                  style={
                     active
-                      ? "bg-[color:var(--color-zenith)] shadow-[0_0_8px_var(--color-zenith)]"
-                      : "bg-[color:var(--color-space-line)]",
-                  )}
+                      ? {
+                          background: CATEGORY_DOT[c],
+                          boxShadow: `0 0 8px ${CATEGORY_DOT[c]}`,
+                        }
+                      : { background: "var(--color-space-line)" }
+                  }
                 />
               </span>
             </button>
