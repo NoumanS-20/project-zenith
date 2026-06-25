@@ -6,9 +6,21 @@ import {
   Body,
 } from "astronomy-engine";
 import type { GeoCoord, SkyBody } from "@/lib/types";
+import { STARS, CONSTELLATIONS, STAR_BY_NAME } from "./constellations";
 
 function observerOf(loc: GeoCoord): Observer {
   return new Observer(loc.lat, loc.lon, loc.alt ?? 0);
+}
+
+/** Convert equatorial coords (RA hours, Dec deg) → horizontal (az/alt deg). */
+export function equatorialToHorizontal(
+  raHours: number,
+  decDeg: number,
+  loc: GeoCoord,
+  date: Date,
+): { azimuthDeg: number; elevationDeg: number } {
+  const hor = Horizon(date, observerOf(loc), raHours, decDeg, "normal");
+  return { azimuthDeg: hor.azimuth, elevationDeg: hor.altitude };
 }
 
 /** Horizontal coordinates (az/alt, degrees) of a body for an observer + time. */
@@ -125,5 +137,57 @@ export function skyBodies(loc: GeoCoord, date: Date): SkyBody[] {
     });
   }
 
+  return out;
+}
+
+export type SkyStar = {
+  name: string;
+  azimuthDeg: number;
+  elevationDeg: number;
+  magnitude: number;
+  aboveHorizon: boolean;
+};
+
+/** Bright catalogue stars in horizontal coordinates for the observer + time. */
+export function skyStars(loc: GeoCoord, date: Date): SkyStar[] {
+  return STARS.map((s) => {
+    const hor = equatorialToHorizontal(s.ra, s.dec, loc, date);
+    return {
+      name: s.name,
+      azimuthDeg: hor.azimuthDeg,
+      elevationDeg: hor.elevationDeg,
+      magnitude: s.mag,
+      aboveHorizon: hor.elevationDeg > 0,
+    };
+  });
+}
+
+export type ConstellationSegment = {
+  constellation: string;
+  a: { azimuthDeg: number; elevationDeg: number };
+  b: { azimuthDeg: number; elevationDeg: number };
+};
+
+/**
+ * Constellation line segments where BOTH endpoint stars are above the horizon,
+ * in horizontal coords — ready to draw on the sky map.
+ */
+export function constellationSegments(
+  loc: GeoCoord,
+  date: Date,
+): ConstellationSegment[] {
+  const out: ConstellationSegment[] = [];
+  for (const c of CONSTELLATIONS) {
+    for (const [an, bn] of c.lines) {
+      const sa = STAR_BY_NAME[an];
+      const sb = STAR_BY_NAME[bn];
+      if (!sa || !sb) continue;
+      const a = equatorialToHorizontal(sa.ra, sa.dec, loc, date);
+      const b = equatorialToHorizontal(sb.ra, sb.dec, loc, date);
+      if (a.elevationDeg > 0 && b.elevationDeg > 0) {
+        out.push({ constellation: c.name, a, b });
+      }
+    }
+  }
   return out;
 }

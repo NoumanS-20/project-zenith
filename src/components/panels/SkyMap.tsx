@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Panel } from "@/components/ui/primitives";
 import { useStore } from "@/store/useStore";
 import { usePasses } from "@/hooks/usePasses";
-import { skyBodies, sunAltitude, twilightPhase } from "@/lib/astro/sky";
+import {
+  skyBodies,
+  sunAltitude,
+  twilightPhase,
+  skyStars,
+  constellationSegments,
+} from "@/lib/astro/sky";
 import type { SkyBody } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 const R = 108;
 const C = 120;
@@ -34,14 +41,18 @@ export function SkyMap() {
   const selectedId = useStore((s) => s.selectedNoradId);
   const passes = usePasses();
 
+  const [showConstellations, setShowConstellations] = useState(true);
+
   const epoch = time.kind === "fixed" ? time.epochMs : Date.now();
   const bucket = time.kind === "fixed" ? time.epochMs : Math.floor(epoch / 30_000);
 
-  const { bodies, sunAlt } = useMemo(() => {
+  const { bodies, sunAlt, stars, segments } = useMemo(() => {
     const date = new Date(epoch);
     return {
       bodies: skyBodies(location, date),
       sunAlt: sunAltitude(location, date),
+      stars: skyStars(location, date).filter((s) => s.aboveHorizon),
+      segments: constellationSegments(location, date),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.lat, location.lon, bucket]);
@@ -66,9 +77,23 @@ export function SkyMap() {
     <Panel
       title="Sky Map"
       action={
-        <span className="text-[0.62rem] capitalize text-[color:var(--color-ink-faint)]">
-          {phase === "day" ? "daylight" : phase}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowConstellations((v) => !v)}
+            aria-pressed={showConstellations}
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide transition-colors",
+              showConstellations
+                ? "bg-[color:var(--color-zenith)]/15 text-[color:var(--color-zenith)]"
+                : "text-[color:var(--color-ink-faint)] hover:text-[color:var(--color-ink)]",
+            )}
+          >
+            ✦ Lines
+          </button>
+          <span className="text-[0.62rem] capitalize text-[color:var(--color-ink-faint)]">
+            {phase === "day" ? "daylight" : phase}
+          </span>
+        </div>
       }
     >
       <svg viewBox="0 0 240 240" className="mx-auto block w-full max-w-[280px]">
@@ -97,6 +122,42 @@ export function SkyMap() {
             {t}
           </text>
         ))}
+
+        {/* Constellation lines + bright stars */}
+        {showConstellations && (
+          <g>
+            {segments.map((seg, i) => {
+              const a = project(seg.a.azimuthDeg, seg.a.elevationDeg);
+              const b = project(seg.b.azimuthDeg, seg.b.elevationDeg);
+              return (
+                <line
+                  key={`${seg.constellation}-${i}`}
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke="var(--color-zenith)"
+                  strokeWidth="0.4"
+                  opacity="0.35"
+                />
+              );
+            })}
+            {stars.map((s) => {
+              const p = project(s.azimuthDeg, s.elevationDeg);
+              const r = Math.max(0.6, 1.9 - s.magnitude * 0.32);
+              return (
+                <circle
+                  key={s.name}
+                  cx={p.x}
+                  cy={p.y}
+                  r={r}
+                  fill="#dfe8ff"
+                  opacity="0.9"
+                />
+              );
+            })}
+          </g>
+        )}
 
         {/* Selected satellite pass arc */}
         {arc.length > 1 && (
@@ -143,7 +204,12 @@ export function SkyMap() {
         )}
       </svg>
 
-      <SkyLegend bodies={bodies} hasArc={arc.length > 1} hasSat={Boolean(selected && (selected.elevationDeg ?? -1) > 0)} />
+      <SkyLegend
+        bodies={bodies}
+        hasArc={arc.length > 1}
+        hasSat={Boolean(selected && (selected.elevationDeg ?? -1) > 0)}
+        starCount={showConstellations ? stars.length : 0}
+      />
     </Panel>
   );
 }
@@ -157,15 +223,22 @@ function SkyLegend({
   bodies,
   hasArc,
   hasSat,
+  starCount,
 }: {
   bodies: SkyBody[];
   hasArc: boolean;
   hasSat: boolean;
+  starCount: number;
 }) {
   const up = bodies.filter((b) => b.aboveHorizon).map((b) => b.name);
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[color:var(--color-space-line)] pt-2 text-[0.62rem] text-[color:var(--color-ink-faint)]">
       <span>Up now: {up.length ? up.join(", ") : "none"}</span>
+      {starCount > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="size-1 rounded-full bg-[#dfe8ff]" /> {starCount} stars
+        </span>
+      )}
       {hasSat && (
         <span className="flex items-center gap-1">
           <span className="size-1.5 rounded-full bg-[color:var(--color-zenith)]" /> satellite
