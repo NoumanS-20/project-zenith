@@ -21,6 +21,7 @@ import { SettingsPanel } from "@/components/panels/SettingsPanel";
 import { useStore, ALL_CATEGORIES } from "@/store/useStore";
 import { CollapsedDock } from "./CollapsedDock";
 import { Inspector } from "./Inspector";
+import { OnboardingCue } from "./OnboardingCue";
 import { TelemetryStrip } from "./TelemetryStrip";
 import { useSatelliteEngine } from "@/hooks/useSatelliteEngine";
 import { useUrlSync } from "@/hooks/useUrlSync";
@@ -141,6 +142,9 @@ export function Dashboard() {
             <ShareButton />
             <DemoButton />
           </div>
+
+          {/* ONBOARDING CUE */}
+          <OnboardingCue />
 
           {/* SELECTION CARDS — top-right on desktop, bottom sheet on mobile */}
           {hasSelection && (
