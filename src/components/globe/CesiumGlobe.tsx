@@ -393,10 +393,9 @@ function init(Cesium: typeof CesiumNS, container: HTMLDivElement): () => void {
   );
 
   // --- Presentation mode: slow ambient camera drift (reduced-motion aware) ---
-  const prefersReduced = () =>
-    (typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) ||
-    document.documentElement.getAttribute("data-reduced-motion") === "true";
+  const osReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   let driftOn = false;
   const driftListener = () => {
@@ -407,12 +406,15 @@ function init(Cesium: typeof CesiumNS, container: HTMLDivElement): () => void {
   };
   scene.preRender.addEventListener(driftListener);
 
-  const applyPresentation = (on: boolean) => {
-    driftOn = on && !prefersReduced();
+  const refreshDrift = () => {
+    const s = useStore.getState();
+    // Respect BOTH the in-app manual toggle (store) AND the OS media query.
+    driftOn = s.presentationMode && !s.reducedMotion && !osReducedMotion();
     if (driftOn) scene.requestRender();
   };
-  applyPresentation(useStore.getState().presentationMode);
-  const unsubPresent = useStore.subscribe((s) => applyPresentation(s.presentationMode));
+  refreshDrift();
+  // Re-evaluate on any store change (reducedMotion or presentationMode flip).
+  const unsubPresent = useStore.subscribe(() => refreshDrift());
 
   return () => {
     clearInterval(trailIv);
