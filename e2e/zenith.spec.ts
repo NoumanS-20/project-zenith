@@ -103,8 +103,10 @@ test.describe("Project Zenith", () => {
     test.skip(testInfo.project.name === "mobile", "left panel collapses on mobile");
     await page.route("**/api/tle**", (route) => route.abort());
     await page.goto("/");
-    // App shell still renders — no crash, with an empty-state hint.
+    // App shell still renders — no crash.
     await expect(page.getByText("Project Zenith").first()).toBeVisible();
+    // Overhead now lives in the collapsed dock; open it to see the empty-state hint.
+    await page.getByRole("button", { name: /Overhead/ }).click();
     await expect(page.getByText(/Computing overhead objects/i)).toBeVisible({
       timeout: 20_000,
     });
