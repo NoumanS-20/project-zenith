@@ -20,7 +20,9 @@ _Full-bleed 3D globe with the zenith cone, ISS orbit trail, live overhead list, 
 
 ---
 
-## ✨ Features
+## ✨ Website Functionality & Unique Features
+
+**What makes it stand out:** real **client-side orbital mechanics (SGP4)** rendered on a Google-Earth-style **3D globe**, **ten live data sources** unified into one mission-control view, scientific **source/freshness/confidence labelling** on every datum, and **demo-safe fallbacks** (works with zero API keys; drops to a 2D map without WebGL) so it never breaks on stage.
 
 **Core**
 - 🌍 Full-screen interactive **3D globe** (CesiumJS) with a 2D map fallback for low-power devices
@@ -63,6 +65,34 @@ _Full-bleed 3D globe with the zenith cone, ISS orbit trail, live overhead list, 
 
 ---
 
+## 📦 Dependencies
+
+Everything installs with a single `npm install` (Node.js 20+). Exact versions are pinned in [`package.json`](package.json).
+
+**Runtime libraries & frameworks**
+- `next`, `react`, `react-dom` — Next.js 16 (App Router) + React 19
+- `cesium`, `resium` — 3D globe engine + React bindings
+- `leaflet`, `react-leaflet` — 2D fallback map
+- `satellite.js` — SGP4/SDP4 orbital propagation
+- `astronomy-engine` — Sun/Moon/planet & star (constellation) positions
+- `@tanstack/react-query` — data fetching, caching, polling
+- `zustand` — client state
+- `zod` — runtime validation of all external responses
+- `recharts` — pass/elevation charts
+- `framer-motion` — UI motion
+- `date-fns`, `clsx`, `tailwind-merge` — utilities
+
+**Build & dev tooling**
+- `typescript`, `eslint` + `eslint-config-next`
+- `tailwindcss` v4 + `@tailwindcss/postcss`
+- `vitest`, `@testing-library/react|jest-dom|user-event`, `jsdom` — unit tests
+- `@playwright/test` — end-to-end / responsive tests
+- Deployed on **Vercel**
+
+External **services** (no install required — accessed via server-side API routes) are listed under [Data Sources](#-data-sources) below.
+
+---
+
 ## 🔌 Data Sources
 
 All keyed providers are proxied **server-side** through Next.js route handlers — **API keys never reach the browser.**
@@ -85,9 +115,15 @@ All keyed providers are proxied **server-side** through Next.js route handlers �
 
 ---
 
-## 🚀 Local Setup
+## 🚀 Installation & Setup Instructions
+
+**Prerequisites:** Node.js 20+ (tested on 22) and npm.
 
 ```bash
+# 0. Clone
+git clone https://github.com/NoumanS-20/project-zenith.git
+cd project-zenith
+
 # 1. Install dependencies (also stages Cesium static assets into public/cesium)
 npm install
 
